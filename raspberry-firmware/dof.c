@@ -17,6 +17,46 @@ float far_distance(float focus_distance, float hyperfocal_distance, float focal_
   return  focus_distance * (hyperfocal_distance - focal_length_mm) / (hyperfocal_distance - focus_distance);
 }
 
+void get_focus_distances(float aperture, float focal_length_mm, float coc)
+{
+  float min_focal_dist = 400;
+  float H = hyperfocal_distance(coc, focal_length_mm, aperture);
+  float focal_distance_inf = -1;
+  float near_so_far = -1.0f;
+  for(float focal_distance = 400; focal_distance < 1000000; focal_distance+=20) {
+    float far  =far_distance(focal_distance, H, focal_length_mm);
+    if (far<0) {
+      /**
+       * Find focal distance where the image is sharp to infinity.
+       */
+       
+      focal_distance_inf = focal_distance;
+      while (1) {
+        far  =far_distance(focal_distance, H, focal_length_mm); 
+        if (far>0) break;
+        //printf("focal_distance=%.2fmm far=%.2fmm\n", focal_distance, far);
+        focal_distance -= 2;
+      }
+      focal_distance += 2;
+      focal_distance_inf = focal_distance;
+      far  =far_distance(focal_distance, H, focal_length_mm);
+      float near =near_distance(focal_distance, H, focal_length_mm);
+      near_so_far = near;
+      //printf("focal_distance=%.2fmm near=%.2fmm far=%.2fmm\n", focal_distance, near, far);
+      break;	
+    }
+  }
+  if(focal_distance_inf<0) return; // didn't find anything
+  for(float focal_distance = focal_distance_inf; focal_distance > min_focal_dist; focal_distance-=2) {
+    float far  =far_distance(focal_distance, H, focal_length_mm);
+    float near =near_distance(focal_distance, H, focal_length_mm);
+    if(far<near_so_far) {
+       near_so_far = near;
+       printf("focal_distance=%.2fmm near=%.2fmm far=%.2fmm\n", focal_distance, near, far);
+    }
+  }
+}
+
 // https://www.dofmaster.com/digital_coc.html
 #define CANON_FF_COC 0.03f
 #define CANON_APSC_COC 0.019f
@@ -39,6 +79,7 @@ int main(int argc, char *argv[])
   float near =near_distance(focal_distance, H, focal_length);
   float far  =far_distance(focal_distance, H, focal_length);
 
-  printf("H=%fmm near=%fmm far=%fmm\n", H, near, far);
+  printf("H=%fmm near=%fmm far=%fmm\n\n\n", H, near, far);
+  get_focus_distances(aperture, focal_length, CANON_FF_COC);
   return 0;
 }
