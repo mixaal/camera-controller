@@ -29,7 +29,7 @@ On raspberry:
 ```
 sudo su -
 reboot
-
+```
 
 Your desktop:
 ```
