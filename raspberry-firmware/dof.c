@@ -1,6 +1,11 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+float optimum_distance(float focal_length_mm, float real_object_height_mm, float image_height_px, float object_height_px, float sensor_height_mm)
+{
+  return (focal_length_mm * real_object_height_mm * image_height_px) / (object_height_px * sensor_height_mm);
+}
+
 float hyperfocal_distance(float coc, float focal_length_mm, float aperture)
 {
   float f = focal_length_mm;
@@ -50,9 +55,10 @@ void get_focus_distances(float aperture, float focal_length_mm, float coc)
   for(float focal_distance = focal_distance_inf; focal_distance > min_focal_dist; focal_distance-=2) {
     float far  =far_distance(focal_distance, H, focal_length_mm);
     float near =near_distance(focal_distance, H, focal_length_mm);
+    float dof = (far>near) ? far-near : 0.0f;
     if(far<near_so_far) {
        near_so_far = near;
-       printf("focal_distance=%.2fmm near=%.2fmm far=%.2fmm\n", focal_distance, near, far);
+       printf("focal_distance=%.2fmm near=%.2fmm far=%.2fmm dof=%.2fmm\n", focal_distance, near, far, dof);
     }
   }
 }
@@ -81,5 +87,6 @@ int main(int argc, char *argv[])
 
   printf("H=%fmm near=%fmm far=%fmm\n\n\n", H, near, far);
   get_focus_distances(aperture, focal_length, CANON_FF_COC);
+  printf("distance=%.2f\n", optimum_distance(focal_length /*mm*/, 1500 /* mm */, 3700 /*px*/, 3200 /*px*/, 24 /*mm*/));
   return 0;
 }
