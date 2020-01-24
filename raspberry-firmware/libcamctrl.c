@@ -15,7 +15,6 @@ typedef struct {
 
 static GPParams ctx;
 
-
 static void errordumper(GPLogLevel level, const char *domain, const char *str,
                  void *data) {
   printf("%s (data %p)\n", str,data);
@@ -615,7 +614,7 @@ out:
 	return ret;
 }
 
-void capture_image(GPParams *ctx, const char *jpgname) 
+static void capture_image_to_file(GPParams *ctx, const char *jpgname) 
 {  // capture 1 preview image
   Camera *canon = ctx->camera;
   GPContext *canoncontext = ctx->context;
@@ -640,6 +639,10 @@ void capture_image(GPParams *ctx, const char *jpgname)
   }
 }
 
+void capture_image(void)
+{
+  capture_image_to_file(&ctx, "liveview.jpg");
+}
 
 void gp_params_init(GPParams *p)
 {
@@ -660,63 +663,13 @@ int init_camera(void)
     */
     gp_log_add_func(GP_LOG_ERROR, errordumper, 0);
     printf("Camera init.  Takes about 10 seconds.\n");
-    return gp_camera_init(ctx.camera, ctx.context);
+    int retval = gp_camera_init(ctx.camera, ctx.context);
+    printf("gp_camera_init(): %d\n", retval);
+    return retval;
 }
 
 void exit_camera(void)
 {
     gp_camera_exit(ctx.camera, ctx.context);
 }
-
-int
-main(int argc, char **argv) 
-{
-	int	i, retval;
-
-	retval = init_camera();
-	if (retval != GP_OK) {
-		printf("  Retval: %d\n", retval);
-		exit (1);
-	}
-	//canon_enable_capture(&ctx, TRUE);
-	retval = camera_eosviewfinder(1);
-	if (retval != GP_OK) {
-		fprintf(stderr,"camera_eosviewfinder(1): %d\n", retval);
-		exit(1);
-	}
-
-	// slide to the very left       
-        for(int repeat=0; repeat<5; repeat++){
-	  printf("Drive to the left...	\n");
-          retval=set_config_action(&ctx, "manualfocusdrive", "2");
-      	  if (retval != GP_OK) {
-		fprintf(stderr,"manualfocusdrive: %d\n", retval);
-	  }
-	  sleep(1);
-        }
-        capture_image(&ctx, "near-preview.jpg");
-
-	// slide to the very right
-        for(int repeat=0; repeat<5; repeat++){
-	  printf("Drive to the right...	\n");
-          retval=set_config_action(&ctx, "manualfocusdrive", "6");
-      	  if (retval != GP_OK) {
-		fprintf(stderr,"manualfocusdrive: %d\n", retval);
-	  }
-	  sleep(1);
-        }
-        capture_image(&ctx, "far-preview.jpg");
-
-
-	retval = camera_eosviewfinder(0);
-	if (retval != GP_OK) {
-		fprintf(stderr,"camera_eosviewfinder(0): %d\n", retval);
-		exit(1);
-	}
-
-	sleep(10);
-	exit_camera();
-	return 0;
-}
-
 
