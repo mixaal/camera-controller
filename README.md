@@ -16,3 +16,8 @@ cd raspberry-firmware/server/
 ```
 firefox http://<IP>:8080/
 ```
+
+## Architecture
+
+
+![Architecture Overview](CameraController.png)
