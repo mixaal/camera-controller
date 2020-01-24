@@ -5,8 +5,6 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
-	"os"
-	"strconv"
 	"sync"
 	"time"
 
@@ -27,9 +25,19 @@ const livePreviewFile string = "liveview.jpg"
 type livePreview struct {
 	mux     sync.RWMutex
 	content []byte
+	enabled bool
 }
 
-var preview livePreview = livePreview{}
+const cameraQuit int = 0
+const cameraLiveViewOn = 1
+const cameraLiveViewOff = 2
+
+type cameraCommand struct {
+	cType int
+}
+
+var cameraEventQueue chan cameraCommand = make(chan cameraCommand, 100)
+var preview livePreview = livePreview{enabled: false}
 
 func streamPreview(w http.ResponseWriter, r *http.Request) {
 	preview.mux.RLock()
@@ -71,23 +79,28 @@ func getFavicon(w http.ResponseWriter, r *http.Request) {
 	serveFile(w, r, "favicon.ico", true)
 }
 
-func turnLiveView(onOff int) {
+func turnLiveView(enabled bool) {
 	for retry := 0; retry < 10; retry++ {
+		var onOff int = 0
+		if enabled {
+			onOff = 1
+		}
 		err := int(C.camera_eosviewfinder(C.int(onOff)))
 		if err == 0 {
+			preview.enabled = enabled
 			return
 		}
 	}
 }
 
 func liveViewOff(w http.ResponseWriter, r *http.Request) {
-	turnLiveView(0)
-	w.WriteHeader(http.StatusCreated)
+	cameraEventQueue <- cameraCommand{cType: cameraLiveViewOff}
+	w.WriteHeader(http.StatusAccepted)
 }
 
 func liveViewOn(w http.ResponseWriter, r *http.Request) {
-	turnLiveView(1)
-	w.WriteHeader(http.StatusCreated)
+	cameraEventQueue <- cameraCommand{cType: cameraLiveViewOn}
+	w.WriteHeader(http.StatusAccepted)
 }
 
 func post(w http.ResponseWriter, r *http.Request) {
@@ -124,46 +137,56 @@ func waitForCamera() {
 	}
 }
 
-func liveView(quitChannel chan struct{}) {
-	for true {
+func processCameraEventQueue(messageChannel chan cameraCommand) {
+	for {
 		select {
-		case <-quitChannel:
-			fmt.Println("Quit capture...")
-			return
+		case cmd, ok := <-messageChannel:
+			if !ok {
+				fmt.Println("Quit capture...")
+				return
+			}
+			switch cmd.cType {
+			case cameraQuit:
+				fmt.Println("Quit capture...")
+				return
+			case cameraLiveViewOff:
+				fmt.Println("Live view off...")
+				turnLiveView(false)
+			case cameraLiveViewOn:
+				fmt.Println("Live view on...")
+				turnLiveView(true)
+			}
 		default:
-			fmt.Println("Capture...")
-			C.capture_image()
-			fmt.Println("Write to memory...")
-			preview.mux.Lock()
-			preview.content, _ = ioutil.ReadFile(livePreviewFile)
-			preview.mux.Unlock()
+			if preview.enabled {
+				fmt.Println("Capture...")
+				C.capture_image()
+				fmt.Println("Write to memory...")
+				preview.mux.Lock()
+				preview.content, _ = ioutil.ReadFile(livePreviewFile)
+				preview.mux.Unlock()
+			}
 		}
 	}
 }
 
 func main() {
 
-	quit := make(chan struct{})
 	waitForCamera()
-	err := int(C.camera_eosviewfinder(1))
-	if err != 0 {
-		fmt.Println("Can't initialize liveview, err=" + strconv.Itoa(err))
-		os.Exit(1)
-	}
+	turnLiveView(true)
 
 	atexit.TrapSignals()
 	defer atexit.CallExitFuncs()
 
 	atexit.Run(func() {
 		fmt.Println("Terminating liveview...")
-		close(quit)
+		close(cameraEventQueue)
 		time.Sleep(5 * time.Second)
 		fmt.Println("Terminating camera...")
-		turnLiveView(0)
+		turnLiveView(false)
 		C.exit_camera()
 	})
 
-	go liveView(quit)
+	go processCameraEventQueue(cameraEventQueue)
 
 	fmt.Println("Starting server on :8080...")
 	r := mux.NewRouter()
