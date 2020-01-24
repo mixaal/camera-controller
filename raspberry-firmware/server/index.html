@@ -1,8 +1,16 @@
 <html>
 <head>
   <title>Camera Preview</title>
+  <!-- <script src="https://cdn.jsdelivr.net/npm/vue"></script> -->
+  <script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+  
+  <link rel="shortcut icon" href="/favicon.ico" type="image/x-icon">
+  <link rel="icon" href="/favicon.ico" type="image/x-icon">
 </head>
 <body>
-<img src="liveview.jpg"/>
+  <div id="app">
+    <img v-bind:src="liveViewImage" />    
+  </div>
+  <script src="main.js" ></script>
 </body>
 </html>

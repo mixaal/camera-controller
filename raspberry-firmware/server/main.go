@@ -9,6 +9,7 @@ import (
 	"strconv"
 	"time"
 
+	"bitbucket.org/JeremySchlatter/go-atexit"
 	"github.com/gorilla/mux"
 )
 
@@ -21,39 +22,66 @@ var imageChannel chan []byte
 var hasPreview bool = true
 
 func streamPreview(w http.ResponseWriter, r *http.Request) {
-	if hasPreview {
-		content, err := ioutil.ReadFile("liveview.jpg")
-		if err != nil {
-			http.NotFound(w, r)
-			return
-		}
+	C.capture_image()
+	content, err := ioutil.ReadFile("liveview.jpg")
+	if err == nil {
 		w.Header().Set("Content-Type", "application/octetstream")
 		w.WriteHeader(http.StatusOK)
-		//w.Write(<-imageChannel)
 		w.Write(content)
 	} else {
 		http.NotFound(w, r)
 	}
 }
 
-func getIndex(w http.ResponseWriter, r *http.Request) {
-	content, err := ioutil.ReadFile("index.html")
+func serveFile(w http.ResponseWriter, r *http.Request, name string, binary bool) {
+	content, err := ioutil.ReadFile(name)
+	
 	if err == nil {
-		//w.Header().Set("Content-Type", "application/text")
-		//w.WriteHeader(http.StatusOK)
-		fmt.Fprint(w, string(content))
+		if binary {
+		    w.Header().Set("Content-Type", "application/octetstream")
+		    w.WriteHeader(http.StatusOK)
+		    w.Write(content)
+	        } else {
+		    fmt.Fprint(w, string(content))
+		}
 	} else {
+	        fmt.Println(name+":"+err.Error())
 		http.NotFound(w, r)
 	}
 }
 
+func getIndex(w http.ResponseWriter, r *http.Request) {
+	fmt.Println("IDX")
+	serveFile(w, r, "index.html", false)
+}
+
+func getMainJs(w http.ResponseWriter, r *http.Request) {
+	fmt.Println("MAIN>JS")
+	serveFile(w, r, "main.js", false)
+}
+
+func getFavicon(w http.ResponseWriter, r *http.Request) {
+	fmt.Println("FAVICO")
+	serveFile(w, r, "favicon.ico", true)
+}
+
+
+func turnLiveView(onOff int) {
+	for retry := 0; retry < 10; retry++ {
+		err := int(C.camera_eosviewfinder(C.int(onOff)))
+		if err == 0 {
+			return
+		}
+	}
+}
+
 func liveViewOff(w http.ResponseWriter, r *http.Request) {
-	C.camera_eosviewfinder(0)
+	turnLiveView(0)
 	w.WriteHeader(http.StatusCreated)
 }
 
 func liveViewOn(w http.ResponseWriter, r *http.Request) {
-	C.camera_eosviewfinder(1)
+	turnLiveView(1)
 	w.WriteHeader(http.StatusCreated)
 }
 
@@ -81,39 +109,40 @@ func notFound(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte(`{"message": "not found"}`))
 }
 
-func liveView(c chan []byte) {
-	start := time.Now()
+func waitForCamera() {
 	for true {
-		now := time.Now()
-		if now.Sub(start) > 100 /*ms*/ {
-			C.capture_image()
-			content, err := ioutil.ReadFile("liveview.jpg")
-			if err != nil {
-				c <- content
-			}
+		err := int(C.init_camera())
+		if err == 0 {
+			return
 		}
+		time.Sleep(2 * time.Second)
 	}
 }
 
 func main() {
-	err := int(C.init_camera())
-	if err != 0 {
-		fmt.Println("Can't initialize camera, err=" + strconv.Itoa(err))
-		os.Exit(1)
-	}
-	defer C.exit_camera()
-	err = int(C.camera_eosviewfinder(1))
+
+	waitForCamera()
+	err := int(C.camera_eosviewfinder(1))
 	if err != 0 {
 		fmt.Println("Can't initialize liveview, err=" + strconv.Itoa(err))
 		os.Exit(1)
 	}
-	defer C.camera_eosviewfinder(0)
-	imageChannel = make(chan []byte, 1)
-	go liveView(imageChannel)
+
+	atexit.TrapSignals()
+	defer atexit.CallExitFuncs()
+
+	atexit.Run(func() {
+		fmt.Println("Terminating camera...")
+		turnLiveView(0)
+		C.exit_camera()
+	})
+
 	fmt.Println("Starting server on :8080...")
 	r := mux.NewRouter()
 	r.HandleFunc("/liveview.jpg", streamPreview).Methods(http.MethodGet)
 	r.HandleFunc("/", getIndex).Methods(http.MethodGet)
+	r.HandleFunc("/main.js", getMainJs).Methods(http.MethodGet)
+	r.HandleFunc("/favicon.ico", getFavicon).Methods(http.MethodGet)
 	r.HandleFunc("/liveViewOn", liveViewOn).Methods(http.MethodPost)
 	r.HandleFunc("/liveViewOff", liveViewOff).Methods(http.MethodPost)
 	//    r.HandleFunc("/", post).Methods(http.MethodPost)
