@@ -128,6 +128,7 @@ func liveView(quitChannel chan struct{}) {
 	for true {
 		select {
 		case <-quitChannel:
+			fmt.Println("Quit capture...")
 			return
 		default:
 			fmt.Println("Capture...")
@@ -156,6 +157,7 @@ func main() {
 	atexit.Run(func() {
 		fmt.Println("Terminating liveview...")
 		close(quit)
+		time.Sleep(5 * time.Second)
 		fmt.Println("Terminating camera...")
 		turnLiveView(0)
 		C.exit_camera()
