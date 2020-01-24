@@ -5,6 +5,7 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
+	"strconv"
 	"sync"
 	"time"
 
@@ -26,6 +27,7 @@ type livePreview struct {
 	mux     sync.RWMutex
 	content []byte
 	enabled bool
+	elapsed time.Duration
 }
 
 const cameraQuit int = 0
@@ -93,6 +95,13 @@ func turnLiveView(enabled bool) {
 	}
 }
 
+func captureDuration(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusOK)
+	millis := preview.elapsed.Nanoseconds() / 1000000
+	out := strconv.FormatInt(millis, 10)
+	fmt.Fprint(w, out)
+}
+
 func liveViewOff(w http.ResponseWriter, r *http.Request) {
 	cameraEventQueue <- cameraCommand{cType: cameraLiveViewOff}
 	w.WriteHeader(http.StatusAccepted)
@@ -158,11 +167,12 @@ func processCameraEventQueue(messageChannel chan cameraCommand) {
 			}
 		default:
 			if preview.enabled {
-				fmt.Println("Capture...")
+				startCapture := time.Now()
 				C.capture_image()
-				fmt.Println("Write to memory...")
+				endCapture := time.Now()
 				preview.mux.Lock()
 				preview.content, _ = ioutil.ReadFile(livePreviewFile)
+				preview.elapsed = endCapture.Sub(startCapture)
 				preview.mux.Unlock()
 			}
 		}
@@ -194,8 +204,9 @@ func main() {
 	r.HandleFunc("/", getIndex).Methods(http.MethodGet)
 	r.HandleFunc("/main.js", getMainJs).Methods(http.MethodGet)
 	r.HandleFunc("/favicon.ico", getFavicon).Methods(http.MethodGet)
-	r.HandleFunc("/liveViewOn", liveViewOn).Methods(http.MethodPost)
-	r.HandleFunc("/liveViewOff", liveViewOff).Methods(http.MethodPost)
+	r.HandleFunc("/liveView/on", liveViewOn).Methods(http.MethodPost)
+	r.HandleFunc("/liveView/off", liveViewOff).Methods(http.MethodPost)
+	r.HandleFunc("/liveView/duration", captureDuration).Methods(http.MethodGet)
 	//    r.HandleFunc("/", post).Methods(http.MethodPost)
 	//    r.HandleFunc("/", put).Methods(http.MethodPut)
 	//    r.HandleFunc("/", delete).Methods(http.MethodDelete)

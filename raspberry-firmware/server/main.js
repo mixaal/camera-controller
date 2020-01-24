@@ -27,6 +27,7 @@ Vue.component('capture', {
         this.timer = setInterval(this.fetchEventsList, 300)
     },
     methods: {
+        
         fetchEventsList () {
                 this.currentRandom = Math.random()
             
@@ -42,6 +43,21 @@ Vue.component('capture', {
 var app = new Vue({
     el: '#app',
     data: {
-        liveViewImage: 'liveview.jpg'
+        liveViewImage: 'liveview.jpg',
+        liveViewEnabled: true
+    },
+    methods: {
+        toggleLiveView: function () {
+            http = new XMLHttpRequest()
+            if(this.liveViewEnabled) {
+                this.liveViewEnabled = false
+                http.open('POST', '/liveView/off')
+                http.send()
+            } else {
+                this.liveViewEnabled = true
+                http.open('POST', '/liveView/on')
+                http.send()
+            }
+        },
     }
 })
