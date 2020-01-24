@@ -24,7 +24,7 @@ Vue.component('capture', {
     },
     created () {
         this.fetchEventsList();
-        this.timer = setInterval(this.fetchEventsList, 500)
+        this.timer = setInterval(this.fetchEventsList, 300)
     },
     methods: {
         fetchEventsList () {

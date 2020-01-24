@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"os"
 	"strconv"
+	"sync"
 	"time"
 
 	"bitbucket.org/JeremySchlatter/go-atexit"
@@ -21,31 +22,36 @@ import "C"
 var imageChannel chan []byte
 var hasPreview bool = true
 
+const livePreviewFile string = "liveview.jpg"
+
+type livePreview struct {
+	mux     sync.RWMutex
+	content []byte
+}
+
+var preview livePreview = livePreview{}
+
 func streamPreview(w http.ResponseWriter, r *http.Request) {
-	C.capture_image()
-	content, err := ioutil.ReadFile("liveview.jpg")
-	if err == nil {
-		w.Header().Set("Content-Type", "application/octetstream")
-		w.WriteHeader(http.StatusOK)
-		w.Write(content)
-	} else {
-		http.NotFound(w, r)
-	}
+	preview.mux.RLock()
+	defer preview.mux.RUnlock()
+	w.Header().Set("Content-Type", "application/octetstream")
+	w.WriteHeader(http.StatusOK)
+	w.Write(preview.content)
 }
 
 func serveFile(w http.ResponseWriter, r *http.Request, name string, binary bool) {
 	content, err := ioutil.ReadFile(name)
-	
+
 	if err == nil {
 		if binary {
-		    w.Header().Set("Content-Type", "application/octetstream")
-		    w.WriteHeader(http.StatusOK)
-		    w.Write(content)
-	        } else {
-		    fmt.Fprint(w, string(content))
+			w.Header().Set("Content-Type", "application/octetstream")
+			w.WriteHeader(http.StatusOK)
+			w.Write(content)
+		} else {
+			fmt.Fprint(w, string(content))
 		}
 	} else {
-	        fmt.Println(name+":"+err.Error())
+		fmt.Println(name + ":" + err.Error())
 		http.NotFound(w, r)
 	}
 }
@@ -64,7 +70,6 @@ func getFavicon(w http.ResponseWriter, r *http.Request) {
 	fmt.Println("FAVICO")
 	serveFile(w, r, "favicon.ico", true)
 }
-
 
 func turnLiveView(onOff int) {
 	for retry := 0; retry < 10; retry++ {
@@ -119,8 +124,25 @@ func waitForCamera() {
 	}
 }
 
+func liveView(quitChannel chan struct{}) {
+	for true {
+		select {
+		case <-quitChannel:
+			return
+		default:
+			fmt.Println("Capture...")
+			C.capture_image()
+			fmt.Println("Write to memory...")
+			preview.mux.Lock()
+			preview.content, _ = ioutil.ReadFile(livePreviewFile)
+			preview.mux.Unlock()
+		}
+	}
+}
+
 func main() {
 
+	quit := make(chan struct{})
 	waitForCamera()
 	err := int(C.camera_eosviewfinder(1))
 	if err != 0 {
@@ -132,10 +154,14 @@ func main() {
 	defer atexit.CallExitFuncs()
 
 	atexit.Run(func() {
+		fmt.Println("Terminating liveview...")
+		close(quit)
 		fmt.Println("Terminating camera...")
 		turnLiveView(0)
 		C.exit_camera()
 	})
+
+	go liveView(quit)
 
 	fmt.Println("Starting server on :8080...")
 	r := mux.NewRouter()
