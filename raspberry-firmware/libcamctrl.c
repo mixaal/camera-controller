@@ -11,6 +11,7 @@
 typedef struct {
 	Camera	*camera;
 	GPContext *context ;
+	_Bool logger_installed;
 } GPParams ;
 
 static GPParams ctx;
@@ -655,13 +656,16 @@ void gp_params_init(GPParams *p)
 
 int init_camera(void)
 {
-    gp_params_init(&ctx);
-   /* When I set GP_LOG_DEBUG instead of GP_LOG_ERROR above, I noticed that the
-    * init function seems to traverse the entire filesystem on the camera.  This
-    * is partly why it takes so long.
-    * (Marcus: the ptp2 driver does this by default currently.)
-    */
-    gp_log_add_func(GP_LOG_ERROR, errordumper, 0);
+    if( !ctx.logger_installed ) {
+        gp_params_init(&ctx);
+       /* When I set GP_LOG_DEBUG instead of GP_LOG_ERROR above, I noticed that the
+        * init function seems to traverse the entire filesystem on the camera.  This
+        * is partly why it takes so long.
+        * (Marcus: the ptp2 driver does this by default currently.)
+        */
+        gp_log_add_func(GP_LOG_ERROR, errordumper, 0);
+        ctx.logger_installed = 1;
+    }
     printf("Camera init.  Takes about 10 seconds.\n");
     int retval = gp_camera_init(ctx.camera, ctx.context);
     printf("gp_camera_init(): %d\n", retval);
