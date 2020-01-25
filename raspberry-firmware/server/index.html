@@ -11,7 +11,8 @@
   <div id="app">
     <capture source="liveview.jpg"></capture>
     <!-- <img v-bind:src="liveViewImage" />     -->
-    <button v-on:click="toggleLiveView">Toggle Live View</button>
+    <!-- <button v-on:click="toggleLiveView">Toggle Live View</button> -->
+    <toggle-button text="Toggle Live View" onuri="/liveView/on" offuri="/liveView/off"></toggle-button>
   </div>
   <script src="main.js" ></script>
 </body>

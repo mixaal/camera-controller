@@ -40,24 +40,65 @@ Vue.component('capture', {
     }
 });
 
-var app = new Vue({
-    el: '#app',
-    data: {
-        liveViewImage: 'liveview.jpg',
-        liveViewEnabled: true
+Vue.component('toggle-button', {
+    props: {
+        text: {
+            type: String,
+            required: true,
+            default: "Toggle"
+        },
+        onuri: {
+            type: String,
+            required: true,
+            default: ""
+        },
+        offuri: {
+            type: String,
+            required: true,
+            default: ""
+        }
+    },
+    template: `
+    <div>
+    <button v-on:click="toggleButton">{{ text }}</button>
+    </div>
+    `,
+    
+    data () {
+        return {
+            liveViewEnabled: true,
+            _uriOn: this.onuri,
+            _uriOff: this.offuri
+        }
+    },
+    created () {
+        this.liveViewEnabled = true
     },
     methods: {
-        toggleLiveView: function () {
+        toggleButton: function () {
             http = new XMLHttpRequest()
             if(this.liveViewEnabled) {
                 this.liveViewEnabled = false
-                http.open('POST', '/liveView/off')
+                http.open('POST', this.offuri)
                 http.send()
             } else {
                 this.liveViewEnabled = true
-                http.open('POST', '/liveView/on')
+                http.open('POST', this.onuri)
                 http.send()
             }
         },
+      
+
+    },
+    beforeDestroy () {
+      
+    }
+});
+
+
+var app = new Vue({
+    el: '#app',
+    data: {
+        liveViewImage: 'liveview.jpg'
     }
 })
