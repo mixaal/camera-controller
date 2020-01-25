@@ -9,10 +9,17 @@
 </head>
 <body>
   <div id="app">
-    <capture source="liveview.jpg"></capture>
+    <toggle-button text="Toggle Live View" onuri="/liveView/capture/on" offuri="/liveView/capture/off" onstart></toggle-button>
+    <toggle-button text="Toggle Live View Histogram" onuri="/liveView/histogram/on" offuri="/liveView/histogram/off"></toggle-button>
+    <toggle-button text="Toggle Live View Levels" onuri="/liveView/levels/on" offuri="/liveView/levels/off"></toggle-button>
+
+    <capture source="liveview/capture.jpg"></capture>
     <!-- <img v-bind:src="liveViewImage" />     -->
     <!-- <button v-on:click="toggleLiveView">Toggle Live View</button> -->
-    <toggle-button text="Toggle Live View" onuri="/liveView/on" offuri="/liveView/off"></toggle-button>
+    <capture source="liveview/histogram.jpg"></capture>
+    <capture source="liveview/levels.jpg"></capture>
+
+    
   </div>
   <script src="main.js" ></script>
 </body>

@@ -56,23 +56,34 @@ Vue.component('toggle-button', {
             type: String,
             required: true,
             default: ""
+        },
+        onstart: {
+            type: Boolean,
+            required: true,
+            default: false
         }
     },
     template: `
     <div>
     <button v-on:click="toggleButton">{{ text }}</button>
+    <p v-if="this.liveViewEnabled">
+       Currently enabled
+    </p>
+    <p v-else="this.liveViewEnabled">
+       Currently disabled
+    </p>
     </div>
     `,
     
     data () {
         return {
-            liveViewEnabled: true,
+            liveViewEnabled: this.onstart,
             _uriOn: this.onuri,
             _uriOff: this.offuri
         }
     },
     created () {
-        this.liveViewEnabled = true
+        this.liveViewEnabled = this.onstart
     },
     methods: {
         toggleButton: function () {
