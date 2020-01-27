@@ -1,3 +1,69 @@
+Vue.component('imageprocessor', {
+    props: {
+        source: {
+            type: String,
+            required: true,
+            default: "canvas.jpg"
+        }
+    },
+    template: `
+    <div id="sketch">
+        <canvas ref="paint"></canvas>
+    </div>
+    `,
+    data () {
+        return {
+            currentRandom: 0,
+            mounted: false,
+            timer: ''
+        }
+    },
+    created () {
+        this.mounted = false;
+        this.paint();
+        this.timer = setInterval(this.paint, 1000);
+    },
+    mounted () {
+        this.mounted = true;
+    },
+    methods: {
+        image_src() {
+            return this.source+"?random="+this.currentRandom
+        },
+        paint() {
+            if (!this.mounted) return;
+            this.currentRandom = Math.random();
+            var canvas = this.$refs.paint;
+            var ctx = canvas.getContext('2d');
+        
+            var img = new Image();
+            //img.crossOrigin = '';
+            img.onload=function() {
+                canvas.width = img.width;
+                canvas.height = img.height;
+                ctx.drawImage(img, 0, 0);
+                var image = ctx.getImageData(0, 0, 100, 100);
+                var data = image.data;
+                for (var i = 0; i < data.length; i += 4) {
+                    data[i]     = 255 - data[i];     // red
+                    data[i + 1] = 255 - data[i + 1]; // green
+                    data[i + 2] = 255 - data[i + 2]; // blue
+                }
+                ctx.putImageData(image, 0, 0);
+            }
+            //img.crossOrigin = "anonymous";
+            img.src = this.image_src();
+
+
+        }    
+    },
+    beforeDestroy () {
+        clearInterval(this.timer)
+    }
+}
+)
+
+
 Vue.component('capture', {
     props: {
         source: {
