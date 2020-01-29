@@ -149,16 +149,24 @@ Vue.component('imageprocessor', {
         <canvas ref="paint"></canvas>
         </td>
         <td>
+        <button v-on:click="reset_settings">Reset All</button>
+        <br/>
         Vibrance<br/>
-        <input type="range" min="-0.5" max="0.5" value="0" step="0.01" class="slider" id="vibrance_scale" v-model="vibrance_scale" ><br/>
+        <input type="range" min="-0.5" max="0.5" value="0" step="0.01" class="slider" id="vibrance_scale" v-model="vibrance_scale" >
+        <button @click="vibrance_scale=0.0">Reset</button>
+        <br/>
         {{vibrance_scale}}<br/>
 
         Contrast<br/>
-        <input type="range" min="-128" max="128" value="0" step="1" class="slider" id="vibrance_scale" v-model="contrast_scale" ><br/>
+        <input type="range" min="-128" max="128" value="0" step="1" class="slider" id="contrast_scale" v-model="contrast_scale" >
+        <button @click="contrast_scale=0.0">Reset</button>
+        <br/>
         {{contrast_scale}}<br/>
 
         Exposure<br/>
-        <input type="range" min="-3.5" max="3.5" value="0" step="0.01" class="slider" id="vibrance_scale" v-model="exposure_scale" ><br/>
+        <input type="range" min="-3.5" max="3.5" value="0" step="0.01" class="slider" id="exposure_scale" v-model="exposure_scale" >
+        <button @click="exposure_scale=0.0">Reset</button>
+        <br/>
         {{exposure_scale}}<br/>
         </td>
         </tr>
@@ -186,6 +194,12 @@ Vue.component('imageprocessor', {
     methods: {
         image_src() {
             return this.source+"?random="+this.currentRandom
+        },
+
+        reset_settings() {
+            this.exposure_scale = 0.0;
+            this.contrast_scale = 0.0;
+            this.vibrance_scale = 0.0;
         },
         
         paint() {
