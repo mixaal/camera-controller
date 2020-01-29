@@ -1,4 +1,5 @@
 const COLOR_MAX = 255;
+const COLOR_MID = 128;
 
 function to_gray(r, g, b) {
     return 0.3*r + 0.6*g + 0.1*b;
@@ -21,6 +22,37 @@ function minf(a, b, c) {
 function fabs(x) {
     if(x>=0) return x;
     return -x;
+}
+
+function contrast(data, c) {
+    c = Number(c)
+    dx = c + COLOR_MAX;
+    dy = 259.0 - c;
+    Fx = 259.0 * dx;
+    Fy = COLOR_MAX * dy;
+    F = Fx / Fy;
+    for (var i = 0; i < data.length; i += 4) {
+        r = data[i] - COLOR_MID;
+        g = data[i+1] - COLOR_MID;
+        b = data[i+2] - COLOR_MID;
+
+        r *= F;
+        g *= F;
+        b *= F;
+
+        r += COLOR_MID;
+        g += COLOR_MID;
+        b += COLOR_MID;
+        if (r<0) r = 0;
+        if (g<0) g = 0;
+        if (b<0) b = 0;
+        if (r > COLOR_MAX) r = COLOR_MAX;
+        if (g > COLOR_MAX) g = COLOR_MAX;
+        if (b > COLOR_MAX) b = COLOR_MAX; 
+        data[i]     = r;
+        data[i + 1] = g;
+        data[i + 2] = b;
+    }
 }
 
 function vibrance(data, scale) {
@@ -96,6 +128,10 @@ Vue.component('imageprocessor', {
         Vibrance<br/>
         <input type="range" min="-0.5" max="0.5" value="0" step="0.01" class="slider" id="vibrance_scale" v-model="vibrance_scale" ><br/>
         {{vibrance_scale}}<br/>
+
+        Contrast<br/>
+        <input type="range" min="-128" max="128" value="0" step="1" class="slider" id="vibrance_scale" v-model="contrast_scale" ><br/>
+        {{contrast_scale}}<br/>
         </td>
         </tr>
         </table>
@@ -106,7 +142,8 @@ Vue.component('imageprocessor', {
             currentRandom: 0,
             mounted: false,
             timer: '',
-            vibrance_scale: 0.0
+            vibrance_scale: 0.0,
+            contrast_scale: 0.0
         }
     },
     created () {
@@ -130,6 +167,7 @@ Vue.component('imageprocessor', {
         
             var img = new Image();
             var vscale = this.vibrance_scale;
+            var cscale = this.contrast_scale;
             //img.crossOrigin = '';
             img.onload=function() {
                 canvas.width = img.width;
@@ -137,8 +175,13 @@ Vue.component('imageprocessor', {
                 ctx.drawImage(img, 0, 0);
                 var image = ctx.getImageData(0, 0, canvas.width, canvas.height);
                 var data = image.data;
-                //alert(vscale);
-                vibrance(data, vscale);
+                
+                if(vscale<-0.01 || vscale>0.01) {
+                    vibrance(data, vscale);
+                }
+                if (cscale<0 || cscale > 0) {
+                    contrast(data, cscale);
+                }
                 //black_and_white(data);
                 ctx.putImageData(image, 0, 0);
             }
