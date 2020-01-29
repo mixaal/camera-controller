@@ -55,6 +55,30 @@ function contrast(data, c) {
     }
 }
 
+function exposure(data, e) {
+    e = Number(e)
+    p = Math.pow(2, e);
+    for (var i = 0; i < data.length; i += 4) {
+        r = data[i]  ;
+        g = data[i+1];
+        b = data[i+2];
+
+        r *= p;
+        g *= p;
+        b *= p;
+
+        if (r<0) r = 0;
+        if (g<0) g = 0;
+        if (b<0) b = 0;
+        if (r > COLOR_MAX) r = COLOR_MAX;
+        if (g > COLOR_MAX) g = COLOR_MAX;
+        if (b > COLOR_MAX) b = COLOR_MAX; 
+        data[i]     = r;
+        data[i + 1] = g;
+        data[i + 2] = b;
+    }
+}
+
 function vibrance(data, scale) {
     for (var i = 0; i < data.length; i += 4) {
         r = data[i];
@@ -132,6 +156,10 @@ Vue.component('imageprocessor', {
         Contrast<br/>
         <input type="range" min="-128" max="128" value="0" step="1" class="slider" id="vibrance_scale" v-model="contrast_scale" ><br/>
         {{contrast_scale}}<br/>
+
+        Exposure<br/>
+        <input type="range" min="-3.5" max="3.5" value="0" step="0.01" class="slider" id="vibrance_scale" v-model="exposure_scale" ><br/>
+        {{exposure_scale}}<br/>
         </td>
         </tr>
         </table>
@@ -143,7 +171,8 @@ Vue.component('imageprocessor', {
             mounted: false,
             timer: '',
             vibrance_scale: 0.0,
-            contrast_scale: 0.0
+            contrast_scale: 0.0,
+            exposure_scale: 0.0
         }
     },
     created () {
@@ -168,6 +197,7 @@ Vue.component('imageprocessor', {
             var img = new Image();
             var vscale = this.vibrance_scale;
             var cscale = this.contrast_scale;
+            var escale = this.exposure_scale;
             //img.crossOrigin = '';
             img.onload=function() {
                 canvas.width = img.width;
@@ -181,6 +211,9 @@ Vue.component('imageprocessor', {
                 }
                 if (cscale<0 || cscale > 0) {
                     contrast(data, cscale);
+                }
+                if (escale<-0.01 || escale>0.01) {
+                    exposure(data, escale);
                 }
                 //black_and_white(data);
                 ctx.putImageData(image, 0, 0);
