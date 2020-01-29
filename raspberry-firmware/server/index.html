@@ -6,6 +6,40 @@
   
   <link rel="shortcut icon" href="/favicon.ico" type="image/x-icon">
   <link rel="icon" href="/favicon.ico" type="image/x-icon">
+  <style type="text/css">
+    body {
+      background-color: rgb(80,80,80);
+      color: rgb(240,240,240);
+    }
+    
+    .slider {
+        display: inline;
+        -webkit-appearance: none;
+        height: 15px;
+        border-radius: 5px;
+        background: #d3d3d3;
+        outline: none;
+        -webkit-transition: .2s;
+        transition: opacity .2s;
+        width: 80%;
+        margin-left: 5%;
+    }
+    #vibrance_slider {
+      background: linear-gradient(to right, rgb(100,100,100) , rgb(255,0,0) );
+    }
+    #tint_slider{
+        background: linear-gradient(to right, rgb(0,200,0) , rgb(200,0,200) );
+    }
+    #red_slider{
+        background: linear-gradient(to right, rgb(0,0,0) , rgb(255,0,0) );
+    }
+    #green_slider{
+        background: linear-gradient(to right, rgb(0,0,0) , rgb(0,255,0) );
+    }
+    #blue_slider{
+        background: linear-gradient(to right, rgb(0,0,0) , rgb(0,0,255) );
+    }
+    </style>
 </head>
 <body>
   <div id="app">

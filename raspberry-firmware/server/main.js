@@ -79,6 +79,16 @@ function exposure(data, e) {
     }
 }
 
+function tint(data, temp) {
+    
+    for (var i = 0; i < data.length; i += 4) {
+        g = data[i+1] - temp;
+        if (g<0) g = 0;
+        if (g > COLOR_MAX) g = COLOR_MAX;
+        data[i + 1] = g;
+    }
+}
+
 function vibrance(data, scale) {
     for (var i = 0; i < data.length; i += 4) {
         r = data[i];
@@ -151,23 +161,29 @@ Vue.component('imageprocessor', {
         <td>
         <button v-on:click="reset_settings">Reset All</button>
         <br/>
-        Vibrance<br/>
+        Vibrance 
         <input type="range" min="-0.5" max="0.5" value="0" step="0.01" class="slider" id="vibrance_scale" v-model="vibrance_scale" >
         <button @click="vibrance_scale=0.0">Reset</button>
+        {{vibrance_scale}}
         <br/>
-        {{vibrance_scale}}<br/>
 
-        Contrast<br/>
+        Contrast
         <input type="range" min="-128" max="128" value="0" step="1" class="slider" id="contrast_scale" v-model="contrast_scale" >
         <button @click="contrast_scale=0.0">Reset</button>
+        {{contrast_scale}}
         <br/>
-        {{contrast_scale}}<br/>
 
-        Exposure<br/>
+        Exposure
         <input type="range" min="-3.5" max="3.5" value="0" step="0.01" class="slider" id="exposure_scale" v-model="exposure_scale" >
         <button @click="exposure_scale=0.0">Reset</button>
+        {{exposure_scale}}
         <br/>
-        {{exposure_scale}}<br/>
+
+        Tint
+        <input type="range" min="-20" max="20" value="0" step="1" class="slider" id="tint_slider" v-model="tint_scale" >
+        <button @click="tint_scale=0.0">Reset</button>
+        {{tint_scale}}
+        <br/>
         </td>
         </tr>
         </table>
@@ -180,7 +196,8 @@ Vue.component('imageprocessor', {
             timer: '',
             vibrance_scale: 0.0,
             contrast_scale: 0.0,
-            exposure_scale: 0.0
+            exposure_scale: 0.0,
+            tint_scale: 0.0
         }
     },
     created () {
@@ -200,6 +217,7 @@ Vue.component('imageprocessor', {
             this.exposure_scale = 0.0;
             this.contrast_scale = 0.0;
             this.vibrance_scale = 0.0;
+            this.tint_scale = 0.0;
         },
         
         paint() {
@@ -212,6 +230,7 @@ Vue.component('imageprocessor', {
             var vscale = this.vibrance_scale;
             var cscale = this.contrast_scale;
             var escale = this.exposure_scale;
+            var tscale = this.tint_scale;
             //img.crossOrigin = '';
             img.onload=function() {
                 canvas.width = img.width;
@@ -228,6 +247,9 @@ Vue.component('imageprocessor', {
                 }
                 if (escale<-0.01 || escale>0.01) {
                     exposure(data, escale);
+                }
+                if (tscale<0 || tscale>0) {
+                    tint(data, tscale);
                 }
                 //black_and_white(data);
                 ctx.putImageData(image, 0, 0);
