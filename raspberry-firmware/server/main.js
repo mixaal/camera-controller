@@ -1,3 +1,82 @@
+const COLOR_MAX = 255;
+
+function to_gray(r, g, b) {
+    return 0.3*r + 0.6*g + 0.1*b;
+}
+
+function maxf(a, b, c) {
+    m = a;
+    if (b>a) m = a;
+    if (c>m) m = c;
+    return c;
+}
+
+function minf(a, b, c) {
+    m = a;
+    if (b<a) m = a;
+    if (c<m) m = c;
+    return c;
+}
+
+function fabs(x) {
+    if(x>=0) return x;
+    return -x;
+}
+
+function vibrance(data, scale) {
+    for (var i = 0; i < data.length; i += 4) {
+        r = data[i];
+        g = data[i+1];
+        b = data[i+2];
+        x = maxf(r, g, b);
+        y = minf(r, g, b);
+
+        gray = to_gray(r, g, b);
+        if (x == r && x!=y) {
+            t  = fabs((g - b) / ( x - y ));
+            if (t > 1.0) t = 1.0;
+            scale = scale * (1+t) * 0.5;
+        }
+        a = (x - y) / COLOR_MAX;
+        scale1 = scale * (2 - a);
+        scale2 = 1 + scale1 * (1 - a);
+        sub = y * scale1;
+        r = r * scale2  - sub;
+        g = g * scale2  - sub;
+        b = b * scale2  - sub;
+
+        gray2 = to_gray(r, g, b);
+
+        r *= gray/gray2;
+        g *= gray/gray2;
+        b *= gray/gray2;
+
+        m = maxf( r, g, b );
+
+        if ( m > COLOR_MAX ) {
+            scale = (COLOR_MAX - gray2) / (m - gray2);
+            r = (r - gray2) * scale + gray2;
+            g = (g - gray2) * scale + gray2;
+            b = (b - gray2) * scale + gray2;
+        }
+        if (r > COLOR_MAX) r = COLOR_MAX;
+        if (g > COLOR_MAX) g = COLOR_MAX;
+        if (b > COLOR_MAX) b = COLOR_MAX;
+        data[i]     = r;
+        data[i + 1] = g;
+        data[i + 2] = b;
+    }
+}
+
+function black_and_white(data) {
+    for (var i = 0; i < data.length; i += 4) {
+        r = data[i];
+        g = data[i+1];
+        b = data[i+2];
+        data[i] = data[i+1] = data[i+2] = (r + g + b) / 3;
+    }
+}
+
 Vue.component('imageprocessor', {
     props: {
         source: {
@@ -8,20 +87,32 @@ Vue.component('imageprocessor', {
     },
     template: `
     <div id="sketch">
+        <table>
+        <tr>
+        <td>
         <canvas ref="paint"></canvas>
+        </td>
+        <td>
+        Vibrance<br/>
+        <input type="range" min="-0.5" max="0.5" value="0" step="0.01" class="slider" id="vibrance_scale" v-model="vibrance_scale" ><br/>
+        {{vibrance_scale}}<br/>
+        </td>
+        </tr>
+        </table>
     </div>
     `,
     data () {
         return {
             currentRandom: 0,
             mounted: false,
-            timer: ''
+            timer: '',
+            vibrance_scale: 0.0
         }
     },
     created () {
         this.mounted = false;
         this.paint();
-        this.timer = setInterval(this.paint, 1000);
+        this.timer = setInterval(this.paint, 300);
     },
     mounted () {
         this.mounted = true;
@@ -30,6 +121,7 @@ Vue.component('imageprocessor', {
         image_src() {
             return this.source+"?random="+this.currentRandom
         },
+        
         paint() {
             if (!this.mounted) return;
             this.currentRandom = Math.random();
@@ -37,18 +129,17 @@ Vue.component('imageprocessor', {
             var ctx = canvas.getContext('2d');
         
             var img = new Image();
+            var vscale = this.vibrance_scale;
             //img.crossOrigin = '';
             img.onload=function() {
                 canvas.width = img.width;
                 canvas.height = img.height;
                 ctx.drawImage(img, 0, 0);
-                var image = ctx.getImageData(0, 0, 100, 100);
+                var image = ctx.getImageData(0, 0, canvas.width, canvas.height);
                 var data = image.data;
-                for (var i = 0; i < data.length; i += 4) {
-                    data[i]     = 255 - data[i];     // red
-                    data[i + 1] = 255 - data[i + 1]; // green
-                    data[i + 2] = 255 - data[i + 2]; // blue
-                }
+                //alert(vscale);
+                vibrance(data, vscale);
+                //black_and_white(data);
                 ctx.putImageData(image, 0, 0);
             }
             //img.crossOrigin = "anonymous";
