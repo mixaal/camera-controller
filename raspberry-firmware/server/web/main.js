@@ -1,3 +1,5 @@
+
+
 const COLOR_MAX = 255;
 const COLOR_MID = 128;
 
@@ -143,6 +145,25 @@ function black_and_white(data) {
     }
 }
 
+function rgbToHex(rgb) 
+ { 
+    alert(rgb);
+    var hex = Number(rgb).toString(16);
+    if (hex.length < 2) {
+         hex = "0" + hex;
+    }
+    return hex;
+}
+
+function fullColorHex(r, g, b) {   
+    var red = rgbToHex(r);
+    var green = rgbToHex(g);
+    var blue = rgbToHex(b);
+    return '#'+red+green+blue;
+}
+
+var Photoshop = VueColor.Photoshop
+
 Vue.component('imageprocessor', {
     props: {
         source: {
@@ -150,6 +171,9 @@ Vue.component('imageprocessor', {
             required: true,
             default: "canvas.jpg"
         }
+    },
+    components: {
+        'photoshop-picker': Photoshop
     },
     template: `
     <div id="sketch">
@@ -159,6 +183,13 @@ Vue.component('imageprocessor', {
         <canvas ref="paint"></canvas>
         </td>
         <td>
+        <button id="fg_color" v-bind:style="fgc" @click="toggleFgPicker">FG</button>
+        <photoshop-picker v-if="foreground_color_picker_enabled" id="foreground_picker" v-model="foreground_color" @ok="chooseFgColor" @cancel="toggleFgPicker"></photoshop-picker>
+
+        <button id="fg_color" v-bind:style="bgc" @click="toggleBgPicker">BG</button>
+        <photoshop-picker v-if="background_color_picker_enabled" id="background_picker" v-model="background_color" @ok="chooseBgColor" @cancel="toggleBgPicker"></photoshop-picker>
+        <br/>
+
         <button v-on:click="reset_settings">Reset All</button>
         <br/>
         Vibrance 
@@ -194,10 +225,24 @@ Vue.component('imageprocessor', {
             currentRandom: 0,
             mounted: false,
             timer: '',
+            foreground_color_picker_enabled: false,
+            background_color_picker_enabled: false,
+            foreground_color: { 
+               r: 255, g: 255, b: 255
+            },
+            background_color: { r: 0, g: 0, b: 0 },
             vibrance_scale: 0.0,
             contrast_scale: 0.0,
             exposure_scale: 0.0,
-            tint_scale: 0.0
+            tint_scale: 0.0,
+            bgc: {
+                backgroundColor: '#000000'
+            },
+            fgc: {
+                backgroundColor: '#ffffff'
+            }
+
+
         }
     },
     created () {
@@ -209,6 +254,20 @@ Vue.component('imageprocessor', {
         this.mounted = true;
     },
     methods: {
+        chooseFgColor() {
+            this.toggleFgPicker();
+            this.fgc.backgroundColor = this.foreground_color.hex;
+        },
+        chooseBgColor() {
+            this.toggleBgPicker();
+            this.bgc.backgroundColor = this.background_color.hex;
+        },
+        toggleFgPicker() {
+            this.foreground_color_picker_enabled = !this.foreground_color_picker_enabled;
+        },
+        toggleBgPicker() {
+            this.background_color_picker_enabled = !this.background_color_picker_enabled;
+        },
         image_src() {
             return this.source+"?random="+this.currentRandom
         },

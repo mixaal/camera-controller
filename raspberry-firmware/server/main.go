@@ -6,6 +6,7 @@ import (
 	"log"
 	"net/http"
 	"strconv"
+	"strings"
 	"sync"
 	"time"
 
@@ -14,7 +15,7 @@ import (
 )
 
 // #cgo CFLAGS: -I../ -I../../imageprocessor-dist
-// #cgo LDFLAGS: -L../ -L../../imageprocessor-dist/x86_64/darwin -limageprocessor -ljpeg -lexif -lcamctrl -lgphoto2 -lgphoto2_port
+// #cgo LDFLAGS: -L../ -L../../imageprocessor-dist/x86_64/darwin -limageprocessor -ljpeg -lexif -lcamctrl -lgphoto2 -lgphoto2_port -lm
 // #include <libcamctrl.h>
 // #include <libmain.h>
 import "C"
@@ -84,6 +85,9 @@ func serveFile(w http.ResponseWriter, r *http.Request, name string, binary bool)
 			w.WriteHeader(http.StatusOK)
 			w.Write(content)
 		} else {
+			if strings.HasSuffix(name, "js") || strings.HasSuffix(name, "vue") {
+				w.Header().Set("Content-Type", "text/javascript")
+			}
 			fmt.Fprint(w, string(content))
 		}
 	} else {
@@ -94,20 +98,13 @@ func serveFile(w http.ResponseWriter, r *http.Request, name string, binary bool)
 
 // get index.html file
 func getIndex(w http.ResponseWriter, r *http.Request) {
-	fmt.Println("IDX")
-	serveFile(w, r, "index.html", false)
-}
-
-// get main Vue application
-func getMainJs(w http.ResponseWriter, r *http.Request) {
-	fmt.Println("MAIN>JS")
-	serveFile(w, r, "main.js", false)
-}
-
-// get fav-icon
-func getFavicon(w http.ResponseWriter, r *http.Request) {
-	fmt.Println("FAVICO")
-	serveFile(w, r, "favicon.ico", true)
+	fmt.Println(r.URL)
+	path := r.URL.String()
+	if path == "/" {
+		serveFile(w, r, "web/index.html", false)
+	} else {
+		serveFile(w, r, "web"+path, false)
+	}
 }
 
 // turn on/off the live view capture with retry attempt on camera
@@ -236,8 +233,8 @@ func processCameraEventQueue(messageChannel chan cameraCommand) {
 
 func main() {
 
-	waitForCamera()
-	turnLiveView(true)
+	//waitForCamera()
+	//turnLiveView(true)
 
 	atexit.TrapSignals()
 	defer atexit.CallExitFuncs()
@@ -259,8 +256,9 @@ func main() {
 	r.HandleFunc("/liveview/histogram.jpg", streamPreviewHistogram).Methods(http.MethodGet)
 	r.HandleFunc("/liveview/levels.jpg", streamPreviewLevels).Methods(http.MethodGet)
 	r.HandleFunc("/", getIndex).Methods(http.MethodGet)
-	r.HandleFunc("/main.js", getMainJs).Methods(http.MethodGet)
-	r.HandleFunc("/favicon.ico", getFavicon).Methods(http.MethodGet)
+	r.HandleFunc("/main.js", getIndex).Methods(http.MethodGet)
+	r.HandleFunc("/vue-color.min.js", getIndex).Methods(http.MethodGet)
+	r.HandleFunc("/vue-color.js", getIndex).Methods(http.MethodGet)
 	r.HandleFunc("/liveView/capture/on", liveViewOn).Methods(http.MethodPost)
 	r.HandleFunc("/liveView/capture/off", liveViewOff).Methods(http.MethodPost)
 	r.HandleFunc("/liveView/histogram/on", liveViewHistogramOn).Methods(http.MethodPost)
@@ -268,9 +266,5 @@ func main() {
 	r.HandleFunc("/liveView/levels/on", liveViewLevelsOn).Methods(http.MethodPost)
 	r.HandleFunc("/liveView/levels/off", liveViewLevelsOff).Methods(http.MethodPost)
 	r.HandleFunc("/liveView/duration", captureDuration).Methods(http.MethodGet)
-	//    r.HandleFunc("/", post).Methods(http.MethodPost)
-	//    r.HandleFunc("/", put).Methods(http.MethodPut)
-	//    r.HandleFunc("/", delete).Methods(http.MethodDelete)
-	r.HandleFunc("/", notFound)
 	log.Fatal(http.ListenAndServe(":8080", r))
 }
