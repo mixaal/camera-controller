@@ -174,7 +174,7 @@ Vue.component('imageprocessor', {
         <br/>
 
         Exposure
-        <input type="range" min="-3.5" max="3.5" value="0" step="0.01" class="slider" id="exposure_scale" v-model="exposure_scale" >
+        <input type="range" min="-3.5" max="3.5" value="0" step="0.01" class="slider" id="exposure_slider" v-model="exposure_scale" >
         <button @click="exposure_scale=0.0">Reset</button>
         {{exposure_scale}}
         <br/>
