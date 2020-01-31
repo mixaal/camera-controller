@@ -1,5 +1,3 @@
-
-
 const COLOR_MAX = 255;
 const COLOR_MID = 128;
 
@@ -136,6 +134,97 @@ function vibrance(data, scale) {
     }
 }
 
+function saturatef(a) {
+    if(a<0) a=0.0;
+    if(a>1.0) a = 1.0;
+    return a;
+}
+
+function mix(a, b, k)
+{
+  return a + (b - a) * k;
+}
+
+function vec3_init(x, y, z) {
+    return {
+        r:x, g:y, b:z
+    }
+}
+
+function vec3_add(a, b) {
+    return {
+        r: a.r + b.r,
+        g: a.g + b.g,
+        b: a.b + b.b
+    }
+}
+
+function vec3_multiply(v, k) {
+    return {
+        r: v.r * k,
+        g: v.g * k,
+        b: v.b * k
+    }
+}
+
+function vec3_mix(v, u, k) {
+    return {
+        r: mix(v.r, u.r, k),
+        g: mix(v.g, u.g, k),
+        b: mix(v.b, u.b, k)
+    }
+}
+
+function gradient_map(data, start_color, end_color, weight, opacity) {
+    weight = saturatef(weight)
+    start_color = vec3_multiply(start_color, 1.0/COLOR_MAX);
+    end_color = vec3_multiply(end_color, 1.0/COLOR_MAX);
+    center_color = {
+                    r: 0.5 * ( start_color.r +  end_color.r ),
+                    g: 0.5 * ( start_color.g +  end_color.g ),
+                    b: 0.5 * ( start_color.b +  end_color.b )
+    };
+    for (var i = 0; i < data.length; i += 4) {
+        r = data[i]   / COLOR_MAX;
+        g = data[i+1] / COLOR_MAX;
+        b = data[i+2] / COLOR_MAX;
+
+        Iv = to_gray(r, g, b);
+
+        newRGB = {r:0, g:0, b:0};
+        
+        if (Iv < weight) {
+            k = Iv / weight;
+            
+            newRGB =
+               vec3_add(
+                 vec3_multiply(vec3_mix(start_color, center_color, k), opacity) ,
+                 vec3_multiply(vec3_init(r, g, b), 1 - opacity)
+               );
+          } else {
+            k = (Iv - weight) / (1.0-weight);
+            newRGB =
+               vec3_add(
+                 vec3_multiply(vec3_mix(center_color, end_color, k), opacity),
+                 vec3_multiply(vec3_init(r, g, b), 1 - opacity)
+               );
+          }
+
+        r = COLOR_MAX * newRGB.r;
+        g = COLOR_MAX * newRGB.g;
+        b = COLOR_MAX * newRGB.b;
+        if (r > COLOR_MAX) r = COLOR_MAX;
+        if (g > COLOR_MAX) g = COLOR_MAX;
+        if (b > COLOR_MAX) b = COLOR_MAX;
+        if (r<0) r=0;
+        if (g<0) g=0;
+        if (b<0) b=0;
+        data[i]     = r;
+        data[i + 1] = g;
+        data[i + 2] = b;
+    }
+}
+
 function black_and_white(data) {
     for (var i = 0; i < data.length; i += 4) {
         r = data[i];
@@ -217,6 +306,7 @@ Vue.component('imageprocessor', {
         <table>
         <tr>
         <td>Weight</td>
+<<<<<<< HEAD
         <td class="mainpanel"><input type="range" min="0.0" max="1.0" value="0.5" step="0.02" class="slider" id="gradient_map_weight" v-bind:style="gmap_gradient" v-model="gmap_weight" ></td>
         <td>{{gmap_weight}}</td>
         </tr>
@@ -224,11 +314,21 @@ Vue.component('imageprocessor', {
         <td>Opacity</td>
         <td class="mainpanel"><input type="range" min="0.0" max="1.0" value="0.0" step="0.02" class="slider" id="gradient_map_opacity" v-model="gmap_opacity" ></td>
         <td>{{gmap_opacity}}</td>
+=======
+        <td class="mainpanel"><input type="range" min="0.0" max="1.0" value="0.5" step="0.02" class="slider" id="gradient_map_weight" v-bind:style="gmap_gradient" v-model="gmap.weight" ></td>
+        <td>{{gmap.weight}}</td>
+        </tr>
+        <tr>
+        <td>Opacity</td>
+        <td class="mainpanel"><input type="range" min="0.0" max="1.0" value="0.0" step="0.02" class="slider" id="gradient_map_opacity" v-model="gmap.opacity" ></td>
+        <td>{{gmap.opacity}}</td>
+>>>>>>> gradient map and color tone components
         </tr>
         </table>
         
         <table>
         <tr>
+<<<<<<< HEAD
         <td>
         <button @click="reset_gmap">Reset</button>
         </td>
@@ -240,6 +340,21 @@ Vue.component('imageprocessor', {
         </td>
         <td>Lock
         </td
+=======
+        
+        <td>
+        <button @click="reset_gmap">Reset</button>
+        </td>
+
+        <td align="right">
+        <label class="switch">
+        <input type="checkbox" checked v-model="gmap.lock">
+        <span class="swslider round"></span>
+        </label>
+        </td>
+
+        <td>Lock</td>
+>>>>>>> gradient map and color tone components
         </tr>
         </table>
         </p>
@@ -297,12 +412,22 @@ Vue.component('imageprocessor', {
             contrast_scale: 0.0,
             exposure_scale: 0.0,
             tint_scale: 0.0,
+<<<<<<< HEAD
             gmap_weight: 0.5,
             gmap_opacity: 0.0,
             gmap_lock: false,
             gmap_fg: {r:255, g:255, b:255},
             gmap_bg: {r:0, g:0, b:0},
 
+=======
+            gmap: {
+                weight: 0.5,
+                opacity: 0.0,
+                lock: false,
+                fg: {r:255, g:255, b:255},
+                bg: {r:0, g:0, b:0}
+            },
+>>>>>>> gradient map and color tone components
             tone_cyan_red: 0.0,
             tone_magenta_green: 0.0,
             tone_yellow_blue: 0.0,
@@ -353,9 +478,15 @@ Vue.component('imageprocessor', {
             this.foreground_color.r = this.foreground_color.rgba.r;
             this.foreground_color.g = this.foreground_color.rgba.g;
             this.foreground_color.b = this.foreground_color.rgba.b;
+<<<<<<< HEAD
             if(!this.gmap_lock) {
                 this.gmap_fg = this.foreground_color;
                 this.gmap_bg = this.background_color;
+=======
+            if(!this.gmap.lock) {
+                this.gmap.fg = this.foreground_color;
+                this.gmap.bg = this.background_color;
+>>>>>>> gradient map and color tone components
                 this.gmap_style();
             }
         },
@@ -365,15 +496,26 @@ Vue.component('imageprocessor', {
             this.background_color.r = this.background_color.rgba.r;
             this.background_color.g = this.background_color.rgba.g;
             this.background_color.b = this.background_color.rgba.b;
+<<<<<<< HEAD
             if(!this.gmap_lock) {
                 this.gmap_fg = this.foreground_color;
                 this.gmap_bg = this.background_color;
+=======
+            if(!this.gmap.lock) {
+                this.gmap.fg = this.foreground_color;
+                this.gmap.bg = this.background_color;
+>>>>>>> gradient map and color tone components
                 this.gmap_style();
             }
         },
         gmap_style() {
+<<<<<<< HEAD
             sb = rgbtext(this.gmap_bg);
             sf = rgbtext(this.gmap_fg);
+=======
+            sb = rgbtext(this.gmap.bg);
+            sf = rgbtext(this.gmap.fg);
+>>>>>>> gradient map and color tone components
             str = 'linear-gradient(to right, '+sb+' ,'+sf+' )';
             this.gmap_gradient.background = str;
         },
@@ -387,11 +529,19 @@ Vue.component('imageprocessor', {
             return this.source+"?random="+this.currentRandom
         },
         reset_gmap() {
+<<<<<<< HEAD
             this.gmap_weight=0.5;
             this.gmap_opacity= 0.0;
             this.gmap_lock=false;
             this.gmap_fg={r:255, g:255, b:255};
             this.gmap_bg={r:0, g:0, b:0};
+=======
+            this.gmap.weight=0.5;
+            this.gmap.opacity= 0.0;
+            this.gmap.lock=false;
+            this.gmap.fg={r:255, g:255, b:255};
+            this.gmap.bg={r:0, g:0, b:0};
+>>>>>>> gradient map and color tone components
             this.gmap_style();
         },
         reset_color_tone() {
@@ -475,6 +625,7 @@ Vue.component('imageprocessor', {
             var cscale = this.contrast_scale;
             var escale = this.exposure_scale;
             var tscale = this.tint_scale;
+            var g_map = this.gmap;
             //img.crossOrigin = '';
             img.onload=function() {
                 canvas.width = img.width;
@@ -494,6 +645,9 @@ Vue.component('imageprocessor', {
                 }
                 if (tscale<0 || tscale>0) {
                     tint(data, tscale);
+                }
+                if (g_map.opacity > 0) {
+                    gradient_map(data, g_map.bg, g_map.fg, g_map.weight, g_map.opacity);
                 }
                 //black_and_white(data);
                 ctx.putImageData(image, 0, 0);

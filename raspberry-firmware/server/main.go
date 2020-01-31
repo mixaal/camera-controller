@@ -5,6 +5,7 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
+	"os"
 	"strconv"
 	"strings"
 	"sync"
@@ -42,6 +43,8 @@ type cameraCommand struct {
 	cType int
 }
 
+var skipCamera = false
+
 var cameraEventQueue chan cameraCommand = make(chan cameraCommand, 100)
 var preview livePreview = livePreview{enabled: false}
 var previewHistogram livePreview = livePreview{enabled: false}
@@ -49,7 +52,7 @@ var previewLevels livePreview = livePreview{enabled: false}
 
 // helper method for in-memory content streaming
 func streamContent(w http.ResponseWriter, r *http.Request, p *livePreview) {
-	if !p.enabled {
+	if !skipCamera && !p.enabled {
 		w.WriteHeader(204)
 		return
 	}
@@ -226,6 +229,15 @@ func processCameraEventQueue(messageChannel chan cameraCommand) {
 					previewLevels.content, _ = ioutil.ReadFile(livePreviewLevelsFile)
 					previewLevels.mux.Unlock()
 				}
+			} else {
+				if skipCamera {
+					if _, err := os.Stat(livePreviewFile); err == nil {
+						// do we have the file at least?
+						preview.mux.Lock()
+						preview.content, _ = ioutil.ReadFile(livePreviewFile)
+						preview.mux.Unlock()
+					}
+				}
 			}
 		}
 	}
@@ -233,8 +245,12 @@ func processCameraEventQueue(messageChannel chan cameraCommand) {
 
 func main() {
 
-	//waitForCamera()
-	//turnLiveView(true)
+	if os.Getenv("SKIP_CAMERA_INITIALIZATION") != "true" {
+		waitForCamera()
+		turnLiveView(true)
+	} else {
+		skipCamera = true
+	}
 
 	atexit.TrapSignals()
 	defer atexit.CallExitFuncs()
