@@ -11,6 +11,29 @@
       background-color: rgb(80,80,80);
       color: rgb(240,240,240);
     }
+
+    table {
+      width: 100%;
+    }
+
+    td.panel {
+      width: 30%;
+    }
+
+    td.mainpanel {
+      width: 80%;
+    }
+
+    .group {
+      border-style: solid;
+      border-width: 2px;
+      
+      border-top-color: rgb(200,200,200);
+      border-left-color: rgb(200,200,200);
+      border-bottom-color: rgb(0,0,0);
+      border-right-color: rgb(0,0,0);
+      padding: 10px;
+    }
     
     .slider {
         display: inline;
@@ -23,6 +46,15 @@
         transition: opacity .2s;
         width: 80%;
         margin-left: 5%;
+    }
+    #color_cyan_red {
+      background: linear-gradient(to right, rgb(0,255,255) , rgb(255,0,0) );
+    }
+    #color_magenta_green {
+      background: linear-gradient(to right, rgb(255,0,255) , rgb(0,255,0) );
+    }
+    #color_yellow_blue {
+      background: linear-gradient(to right, rgb(255,255,0) , rgb(0,0,255) );
     }
     #vibrance_slider {
       background: linear-gradient(to right, rgb(100,100,100) , rgb(255,0,0) );
@@ -41,6 +73,65 @@
     }
     #blue_slider{
         background: linear-gradient(to right, rgb(0,0,0) , rgb(0,0,255) );
+    }
+    .switch {
+      position: relative;
+      display: inline-block;
+      width: 30px;
+      height: 17px;
+    }
+
+    .switch input { 
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+
+    .swslider {
+      position: absolute;
+      cursor: pointer;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-color: #ccc;
+      -webkit-transition: .4s;
+      transition: .4s;
+    }
+
+    .swslider:before {
+      position: absolute;
+      content: "";
+      height: 13px;
+      width: 13px;
+      left: 2px;
+      bottom: 2px;
+      background-color: white;
+      -webkit-transition: .4s;
+      transition: .4s;
+    }
+
+    input:checked + .swslider {
+      background-color: #2196F3;
+    }
+
+    input:focus + .swslider {
+      box-shadow: 0 0 1px #2196F3;
+    }
+
+    input:checked + .swslider:before {
+      -webkit-transform: translateX(13px);
+      -ms-transform: translateX(13px);
+      transform: translateX(13px);
+    }
+
+    /* Rounded sliders */
+    .swslider.round {
+      border-radius: 17px;
+    }
+
+    .swslider.round:before {
+      border-radius: 50%;
     }
     </style>
 </head>

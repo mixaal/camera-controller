@@ -145,21 +145,8 @@ function black_and_white(data) {
     }
 }
 
-function rgbToHex(rgb) 
- { 
-    alert(rgb);
-    var hex = Number(rgb).toString(16);
-    if (hex.length < 2) {
-         hex = "0" + hex;
-    }
-    return hex;
-}
-
-function fullColorHex(r, g, b) {   
-    var red = rgbToHex(r);
-    var green = rgbToHex(g);
-    var blue = rgbToHex(b);
-    return '#'+red+green+blue;
+function rgbtext(color) {
+    return "rgb("+color.r+","+color.g+","+color.b+")";
 }
 
 var Photoshop = VueColor.Photoshop
@@ -182,7 +169,7 @@ Vue.component('imageprocessor', {
         <td>
         <canvas ref="paint"></canvas>
         </td>
-        <td>
+        <td class="panel">
         <button id="fg_color" v-bind:style="fgc" @click="toggleFgPicker">FG</button>
         <photoshop-picker v-if="foreground_color_picker_enabled" id="foreground_picker" v-model="foreground_color" @ok="chooseFgColor" @cancel="toggleFgPicker"></photoshop-picker>
 
@@ -192,29 +179,104 @@ Vue.component('imageprocessor', {
 
         <button v-on:click="reset_settings">Reset All</button>
         <br/>
+        <p class="group">
         Vibrance 
         <input type="range" min="-0.5" max="0.5" value="0" step="0.01" class="slider" id="vibrance_scale" v-model="vibrance_scale" >
-        <button @click="vibrance_scale=0.0">Reset</button>
         {{vibrance_scale}}
+        <button @click="vibrance_scale=0.0">Reset</button>
+        </p>
         <br/>
 
+        <p class="group">
         Contrast
         <input type="range" min="-128" max="128" value="0" step="1" class="slider" id="contrast_scale" v-model="contrast_scale" >
-        <button @click="contrast_scale=0.0">Reset</button>
         {{contrast_scale}}
+        <button @click="contrast_scale=0.0">Reset</button>
+        </p>
         <br/>
 
+        <p class="group">
         Exposure
         <input type="range" min="-3.5" max="3.5" value="0" step="0.01" class="slider" id="exposure_slider" v-model="exposure_scale" >
-        <button @click="exposure_scale=0.0">Reset</button>
         {{exposure_scale}}
+        <button @click="exposure_scale=0.0">Reset</button>
+        </p>
         <br/>
 
+        
+        <p class="group">
         Tint
         <input type="range" min="-20" max="20" value="0" step="1" class="slider" id="tint_slider" v-model="tint_scale" >
-        <button @click="tint_scale=0.0">Reset</button>
         {{tint_scale}}
+        <button @click="tint_scale=0.0">Reset</button>
+        </p>
         <br/>
+
+        <p class="group">
+        Gradient Map
+        <table>
+        <tr>
+        <td>Weight</td>
+        <td class="mainpanel"><input type="range" min="0.0" max="1.0" value="0.5" step="0.02" class="slider" id="gradient_map_weight" v-bind:style="gmap_gradient" v-model="gmap_weight" ></td>
+        <td>{{gmap_weight}}</td>
+        </tr>
+        <tr>
+        <td>Opacity</td>
+        <td class="mainpanel"><input type="range" min="0.0" max="1.0" value="0.0" step="0.02" class="slider" id="gradient_map_opacity" v-model="gmap_opacity" ></td>
+        <td>{{gmap_opacity}}</td>
+        </tr>
+        </table>
+        
+        <table>
+        <tr>
+        <td>
+        <button @click="reset_gmap">Reset</button>
+        </td>
+        <td align="right">
+        <label class="switch">
+        <input type="checkbox" checked v-model="gmap_lock">
+        <span class="swslider round"></span>
+        </label>
+        </td>
+        <td>Lock
+        </td
+        </tr>
+        </table>
+        </p>
+        <p class="group">
+        Tone Map <br/>
+        <input type="checkbox" id="checkbox" v-model="tone_preserve_luminosity">Preserve luminosity
+        <input type="radio" name="levels" value="0"  @click="color_tone_settings(0)">Highlights</input>
+        <input type="radio" name="levels" value="1"  @click="color_tone_settings(1)" checked>Midtones</input>
+        <input type="radio" name="levels" value="2"  @click="color_tone_settings(2)">Shadows</input>
+        <table>
+        <tr>
+        <td>azure</td>
+        <td class="mainpanel">
+        <input type="range" min="-100" max="100.0" value="0" step="0.1" class="slider"  id="color_cyan_red" v-model="tone_cyan_red" @change="color_tone_move">
+        </td>
+        <td>red</td>
+        </tr>
+        <tr>
+        <td>magenta</td>
+        <td class="mainpanel">
+        <input type="range" min="-100" max="100.0" value="0" step="0.1" class="slider"  id="color_magenta_green" v-model="tone_magenta_green" @change="color_tone_move">
+        </td>
+        <td>green</td>
+        </tr>
+        <tr>
+        <td>yellow</td>
+        <td class="mainpanel">
+        <input type="range" min="-100" max="100.0" value="0" step="0.1" class="slider"  id="color_yellow_blue" v-model="tone_yellow_blue" @change="color_tone_move">
+        </td>
+        <td>
+        blue
+        </td>
+        </tr>
+        </table>
+        <button @click="reset_color_tone">Reset</button>
+        </p>
+        </td>
         </td>
         </tr>
         </table>
@@ -235,11 +297,42 @@ Vue.component('imageprocessor', {
             contrast_scale: 0.0,
             exposure_scale: 0.0,
             tint_scale: 0.0,
+            gmap_weight: 0.5,
+            gmap_opacity: 0.0,
+            gmap_lock: false,
+            gmap_fg: {r:255, g:255, b:255},
+            gmap_bg: {r:0, g:0, b:0},
+
+            tone_cyan_red: 0.0,
+            tone_magenta_green: 0.0,
+            tone_yellow_blue: 0.0,
+
+            highlights: {
+                cyan_red: 0.0,
+                magenta_green: 0.0,
+                yellow_blue: 0.0
+            },
+            midtones: {
+                cyan_red: 0.0,
+                magenta_green: 0.0,
+                yellow_blue: 0.0
+            },
+            shadows: {
+                cyan_red: 0.0,
+                magenta_green: 0.0,
+                yellow_blue: 0.0
+            },
+            
+            tone_levels: 1,
+            tone_preserve_luminosity: false,
             bgc: {
                 backgroundColor: '#000000'
             },
             fgc: {
                 backgroundColor: '#ffffff'
+            },
+            gmap_gradient: {
+                background: 'linear-gradient(to right, rgb(0,0,0) , rgb(255,255,255) )'
             }
 
 
@@ -257,10 +350,32 @@ Vue.component('imageprocessor', {
         chooseFgColor() {
             this.toggleFgPicker();
             this.fgc.backgroundColor = this.foreground_color.hex;
+            this.foreground_color.r = this.foreground_color.rgba.r;
+            this.foreground_color.g = this.foreground_color.rgba.g;
+            this.foreground_color.b = this.foreground_color.rgba.b;
+            if(!this.gmap_lock) {
+                this.gmap_fg = this.foreground_color;
+                this.gmap_bg = this.background_color;
+                this.gmap_style();
+            }
         },
         chooseBgColor() {
             this.toggleBgPicker();
             this.bgc.backgroundColor = this.background_color.hex;
+            this.background_color.r = this.background_color.rgba.r;
+            this.background_color.g = this.background_color.rgba.g;
+            this.background_color.b = this.background_color.rgba.b;
+            if(!this.gmap_lock) {
+                this.gmap_fg = this.foreground_color;
+                this.gmap_bg = this.background_color;
+                this.gmap_style();
+            }
+        },
+        gmap_style() {
+            sb = rgbtext(this.gmap_bg);
+            sf = rgbtext(this.gmap_fg);
+            str = 'linear-gradient(to right, '+sb+' ,'+sf+' )';
+            this.gmap_gradient.background = str;
         },
         toggleFgPicker() {
             this.foreground_color_picker_enabled = !this.foreground_color_picker_enabled;
@@ -271,12 +386,82 @@ Vue.component('imageprocessor', {
         image_src() {
             return this.source+"?random="+this.currentRandom
         },
+        reset_gmap() {
+            this.gmap_weight=0.5;
+            this.gmap_opacity= 0.0;
+            this.gmap_lock=false;
+            this.gmap_fg={r:255, g:255, b:255};
+            this.gmap_bg={r:0, g:0, b:0};
+            this.gmap_style();
+        },
+        reset_color_tone() {
+            this.highlights.cyan_red = 0.0;
+            this.highlights.magenta_green = 0.0;
+            this.highlights.yellow_blue = 0.0;
+            this.midtones.cyan_red = 0.0;
+            this.midtones.magenta_green = 0.0;
+            this.midtones.yellow_blue = 0.0;
+            this.shadows.cyan_red = 0.0;
+            this.shadows.magenta_green = 0.0;
+            this.shadows.yellow_blue = 0.0;
+            this.tone_cyan_red = 0.0;
+            this.tone_magenta_green = 0.0;
+            this.tone_yellow_blue = 0.0;
+            this.tone_levels = 1;
+            this.tone_preserve_luminosity = false;
+        },
+        color_tone_move() {
+            //console.log("this.levels="+this.tone_levels);
+            switch (this.tone_levels) {
+                case 2:
+                    this.highlights.cyan_red = this.tone_cyan_red;
+                    this.highlights.magenta_green = this.tone_magenta_green;
+                    this.highlights.yellow_blue = this.tone_yellow_blue;
+                    break;
+                case 1:
+                    this.midtones.cyan_red = this.tone_cyan_red;
+                    this.midtones.magenta_green = this.tone_magenta_green;
+                    this.midtones.yellow_blue = this.tone_yellow_blue;
+                    break;
+                case 0:
+                    this.shadows.cyan_red = this.tone_cyan_red;
+                    this.shadows.magenta_green = this.tone_magenta_green;
+                    this.shadows.yellow_blue = this.tone_yellow_blue;
+                    break
+            }
+        },
+
+        color_tone_settings(c) {
+            this.tone_levels = c;
+            //alert(this.tone_levels);
+            switch(this.tone_levels) {
+                case 2:
+                    this.tone_cyan_red = this.highlights.cyan_red;
+                    this.tone_magenta_green = this.highlights.magenta_green;
+                    this.tone_yellow_blue = this.highlights.yellow_blue;
+                    break;
+                case 1:
+                    this.tone_cyan_red = this.midtones.cyan_red;
+                    this.tone_magenta_green = this.midtones.magenta_green;
+                    this.tone_yellow_blue = this.midtones.yellow_blue;
+                    break;
+                case 0:
+                    this.tone_cyan_red = this.shadows.cyan_red;
+                    this.tone_magenta_green = this.shadows.magenta_green;
+                    this.tone_yellow_blue = this.shadows.yellow_blue;
+                    break;
+                default:
+                    alert("Set one of shadows, midtones or highlights to slide!");
+            }
+        },
 
         reset_settings() {
             this.exposure_scale = 0.0;
             this.contrast_scale = 0.0;
             this.vibrance_scale = 0.0;
             this.tint_scale = 0.0;
+            this.reset_color_tone();
+            this.reset_gmap();
         },
         
         paint() {
@@ -393,13 +578,14 @@ Vue.component('toggle-button', {
     },
     template: `
     <div>
-    <button v-on:click="toggleButton">{{ text }}</button>
+    <button v-on:click="toggleButton">
     <p v-if="this.liveViewEnabled">
-       Currently enabled
+        {{ text }} (on)
     </p>
     <p v-else="this.liveViewEnabled">
-       Currently disabled
+        {{ text }} (off)
     </p>
+    </button>
     </div>
     `,
     
