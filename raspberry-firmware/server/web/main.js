@@ -496,15 +496,6 @@ Vue.component('imageprocessor', {
         <table>
         <tr>
         <td>Weight</td>
-<<<<<<< HEAD
-        <td class="mainpanel"><input type="range" min="0.0" max="1.0" value="0.5" step="0.02" class="slider" id="gradient_map_weight" v-bind:style="gmap_gradient" v-model="gmap_weight" ></td>
-        <td>{{gmap_weight}}</td>
-        </tr>
-        <tr>
-        <td>Opacity</td>
-        <td class="mainpanel"><input type="range" min="0.0" max="1.0" value="0.0" step="0.02" class="slider" id="gradient_map_opacity" v-model="gmap_opacity" ></td>
-        <td>{{gmap_opacity}}</td>
-=======
         <td class="mainpanel"><input type="range" min="0.0" max="1.0" value="0.5" step="0.02" class="slider" id="gradient_map_weight" v-bind:style="gmap_gradient" v-model="gmap.weight" ></td>
         <td>{{gmap.weight}}</td>
         </tr>
@@ -512,25 +503,11 @@ Vue.component('imageprocessor', {
         <td>Opacity</td>
         <td class="mainpanel"><input type="range" min="0.0" max="1.0" value="0.0" step="0.02" class="slider" id="gradient_map_opacity" v-model="gmap.opacity" ></td>
         <td>{{gmap.opacity}}</td>
->>>>>>> gradient map and color tone components
         </tr>
         </table>
         
         <table>
         <tr>
-<<<<<<< HEAD
-        <td>
-        <button @click="reset_gmap">Reset</button>
-        </td>
-        <td align="right">
-        <label class="switch">
-        <input type="checkbox" checked v-model="gmap_lock">
-        <span class="swslider round"></span>
-        </label>
-        </td>
-        <td>Lock
-        </td
-=======
         
         <td>
         <button @click="reset_gmap">Reset</button>
@@ -544,7 +521,6 @@ Vue.component('imageprocessor', {
         </td>
 
         <td>Lock</td>
->>>>>>> gradient map and color tone components
         </tr>
         </table>
         </p>
@@ -602,14 +578,6 @@ Vue.component('imageprocessor', {
             contrast_scale: 0.0,
             exposure_scale: 0.0,
             tint_scale: 0.0,
-<<<<<<< HEAD
-            gmap_weight: 0.5,
-            gmap_opacity: 0.0,
-            gmap_lock: false,
-            gmap_fg: {r:255, g:255, b:255},
-            gmap_bg: {r:0, g:0, b:0},
-
-=======
             gmap: {
                 weight: 0.5,
                 opacity: 0.0,
@@ -617,7 +585,6 @@ Vue.component('imageprocessor', {
                 fg: {r:255, g:255, b:255},
                 bg: {r:0, g:0, b:0}
             },
->>>>>>> gradient map and color tone components
             tone_cyan_red: 0.0,
             tone_magenta_green: 0.0,
             tone_yellow_blue: 0.0,
@@ -668,15 +635,9 @@ Vue.component('imageprocessor', {
             this.foreground_color.r = this.foreground_color.rgba.r;
             this.foreground_color.g = this.foreground_color.rgba.g;
             this.foreground_color.b = this.foreground_color.rgba.b;
-<<<<<<< HEAD
-            if(!this.gmap_lock) {
-                this.gmap_fg = this.foreground_color;
-                this.gmap_bg = this.background_color;
-=======
             if(!this.gmap.lock) {
                 this.gmap.fg = this.foreground_color;
                 this.gmap.bg = this.background_color;
->>>>>>> gradient map and color tone components
                 this.gmap_style();
             }
         },
@@ -686,26 +647,15 @@ Vue.component('imageprocessor', {
             this.background_color.r = this.background_color.rgba.r;
             this.background_color.g = this.background_color.rgba.g;
             this.background_color.b = this.background_color.rgba.b;
-<<<<<<< HEAD
-            if(!this.gmap_lock) {
-                this.gmap_fg = this.foreground_color;
-                this.gmap_bg = this.background_color;
-=======
             if(!this.gmap.lock) {
                 this.gmap.fg = this.foreground_color;
                 this.gmap.bg = this.background_color;
->>>>>>> gradient map and color tone components
                 this.gmap_style();
             }
         },
         gmap_style() {
-<<<<<<< HEAD
-            sb = rgbtext(this.gmap_bg);
-            sf = rgbtext(this.gmap_fg);
-=======
             sb = rgbtext(this.gmap.bg);
             sf = rgbtext(this.gmap.fg);
->>>>>>> gradient map and color tone components
             str = 'linear-gradient(to right, '+sb+' ,'+sf+' )';
             this.gmap_gradient.background = str;
         },
@@ -719,19 +669,11 @@ Vue.component('imageprocessor', {
             return this.source+"?random="+this.currentRandom
         },
         reset_gmap() {
-<<<<<<< HEAD
-            this.gmap_weight=0.5;
-            this.gmap_opacity= 0.0;
-            this.gmap_lock=false;
-            this.gmap_fg={r:255, g:255, b:255};
-            this.gmap_bg={r:0, g:0, b:0};
-=======
             this.gmap.weight=0.5;
             this.gmap.opacity= 0.0;
             this.gmap.lock=false;
             this.gmap.fg={r:255, g:255, b:255};
             this.gmap.bg={r:0, g:0, b:0};
->>>>>>> gradient map and color tone components
             this.gmap_style();
         },
         reset_color_tone() {
@@ -816,10 +758,6 @@ Vue.component('imageprocessor', {
             var escale = this.exposure_scale;
             var tscale = this.tint_scale;
             var g_map = this.gmap;
-            var hi = this.highlights;
-            var shad = this.shadows;
-            var mid = this.midtones;
-            var pl = this.preserve_luminosity;
             //img.crossOrigin = '';
             img.onload=function() {
                 canvas.width = img.width;
@@ -828,41 +766,22 @@ Vue.component('imageprocessor', {
                 var image = ctx.getImageData(0, 0, canvas.width, canvas.height);
                 var data = image.data;
                 
-                
-                
-                if (g_map.opacity > 0) {
-                    gradient_map(data, g_map.bg, g_map.fg, g_map.weight, g_map.opacity);
-                }
-
-                var cyan_red_coef = new Array();
-                var magenta_green_coef = new Array();
-                var yellow_blue_coef = new Array();
-                cyan_red_coef[0] = shad.cyan_red;
-                cyan_red_coef[1] = mid.cyan_red;
-                cyan_red_coef[2] = hi.cyan_red;
-                magenta_green_coef[0] = shad.magenta_green;
-                magenta_green_coef[1] = mid.magenta_green;
-                magenta_green_coef[2] = hi.magenta_green;
-                yellow_blue_coef[0] = shad.yellow_blue;
-                yellow_blue_coef[1] = mid.yellow_blue;
-                yellow_blue_coef[2] = hi.yellow_blue;
-                adjust_color_balance(data, cyan_red_coef, magenta_green_coef, yellow_blue_coef, pl);
-                //black_and_white(data);
-
-                if (cscale<0 || cscale > 0) {
-                    contrast(data, cscale);
-                }
-                
-                if (tscale<0 || tscale>0) {
-                    tint(data, tscale);
-                }
-
                 if(vscale<-0.01 || vscale>0.01) {
                     vibrance(data, vscale);
+                }
+                if (cscale<0 || cscale > 0) {
+                    contrast(data, cscale);
                 }
                 if (escale<-0.01 || escale>0.01) {
                     exposure(data, escale);
                 }
+                if (tscale<0 || tscale>0) {
+                    tint(data, tscale);
+                }
+                if (g_map.opacity > 0) {
+                    gradient_map(data, g_map.bg, g_map.fg, g_map.weight, g_map.opacity);
+                }
+                //black_and_white(data);
                 ctx.putImageData(image, 0, 0);
             }
             //img.crossOrigin = "anonymous";
