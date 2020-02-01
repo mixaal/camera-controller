@@ -179,6 +179,23 @@ function vec3_mix(v, u, k) {
     }
 }
 
+function vec3_clamp(v, minr, maxr)
+{
+  o = { r: clamp(v.r, minr, maxr), g: clamp(v.g, minr, maxr), b:clamp(v.b, minr, maxr) };
+  return o;
+}
+
+function blend2(left, right, pos)
+{
+  v =  {
+    r: left.r * (1-pos) + right.r * pos,
+    g: left.g * (1-pos) + right.g * pos,
+    b: left.b * (1-pos) + right.b * pos
+  }
+
+  return v;
+}
+
 function gradient_map(data, start_color, end_color, weight, opacity) {
     weight = saturatef(weight)
     start_color = vec3_multiply(start_color, 1.0/COLOR_MAX);
@@ -423,6 +440,66 @@ function black_and_white(data) {
         data[i] = data[i+1] = data[i+2] = (r + g + b) / 3;
     }
 }
+
+function gauss_kernel(N, sigma=1.0) {
+    var kernel = new Array(N);
+    for(i=0; i<N;i++) {
+        kernel[i] = new Array(N);
+    }
+    if (sigma==0.0) {
+        sigma = N/5.0;
+    }
+    s = 2.0 * sigma * sigma; 
+    maxval = 0;
+    N2 = N>>1;
+    for(x=-N2; x<N2; x++) {
+        for(y=-N2; y<N2; y++) {
+            r = Math.sqrt(x * x + y * y); 
+            f_xy = (Math.exp(-(r * r) / s)) / (Math.PI * s);
+            kernel[x+N2][y+N2]  = f_xy;
+            if(f_xy>maxval) {
+                maxval = f_xy;
+            }
+        }
+    }
+    for(i=0; i<N; i++) {
+        for(j=0; j<N; j++) {
+            kernel[i][j]/=maxval;
+        }
+    }
+    return kernel;
+}
+
+function blend_normal(a,  b, opacity)
+{
+  opacity = saturatef(opacity);
+  a = vec3_clamp(a, 0.0, 1.0);
+  b = vec3_clamp(b, 0.0, 1.0);
+  return blend2( b, a, opacity );
+}
+
+function brush_stroke(data, width, size, opacity, x, y, color, blend_func) {
+    N2 = size>>1;
+    color = vec3_multiply(color, 1/COLOR_MAX);
+    kernel = gauss_kernel(size, size/5.0);
+    for(i=-N2; i<N2; i++) {
+        for(j=-N2; j<N2; j++) {
+            xx = x+i;
+            yy = y+j;
+            idx = 4 * (yy*width + xx);
+            
+            if (idx<0) continue;
+            if (idx>=data.length) continue;
+            g = kernel[i+N2][j+N2];
+            source_pixel = vec3_init(data[idx]/COLOR_MAX, data[idx+1]/COLOR_MAX, data[idx+2]/COLOR_MAX);
+            blend = blend_func(color, source_pixel, g*opacity);
+            data[idx] = COLOR_MAX * blend.r;
+            data[idx+1] = COLOR_MAX * blend.g;
+            data[idx+2] = COLOR_MAX * blend.b;
+        }
+    }
+}
+
 
 function rgbtext(color) {
     return "rgb("+color.r+","+color.g+","+color.b+")";
@@ -762,6 +839,7 @@ Vue.component('imageprocessor', {
                 ctx.drawImage(img, 0, 0);
                 var image = ctx.getImageData(0, 0, canvas.width, canvas.height);
                 var data = image.data;
+                var width = canvas.width;
 
                 if (settings.gmap.opacity > 0) {
                     gradient_map(data, settings.gmap.bg, settings.gmap.fg, settings.gmap.weight, settings.gmap.opacity);
@@ -794,6 +872,8 @@ Vue.component('imageprocessor', {
                 if (settings.tint_scale<0 || settings.tint_scale>0) {
                     tint(data, settings.tint_scale);
                 }
+
+                brush_stroke(data, width, 101, 1.0, 100, 100, settings.foreground_color, blend_normal);
 
                 //black_and_white(data);
                 ctx.putImageData(image, 0, 0);
