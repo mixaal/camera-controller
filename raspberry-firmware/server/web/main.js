@@ -450,44 +450,44 @@ Vue.component('imageprocessor', {
         </td>
         <td class="panel">
         <button id="fg_color" v-bind:style="fgc" @click="toggleFgPicker">FG</button>
-        <photoshop-picker v-if="foreground_color_picker_enabled" id="foreground_picker" v-model="foreground_color" @ok="chooseFgColor" @cancel="toggleFgPicker"></photoshop-picker>
+        <photoshop-picker v-if="foreground_color_picker_enabled" id="foreground_picker" v-model="settings.foreground_color" @ok="chooseFgColor" @cancel="toggleFgPicker"></photoshop-picker>
 
         <button id="fg_color" v-bind:style="bgc" @click="toggleBgPicker">BG</button>
-        <photoshop-picker v-if="background_color_picker_enabled" id="background_picker" v-model="background_color" @ok="chooseBgColor" @cancel="toggleBgPicker"></photoshop-picker>
+        <photoshop-picker v-if="background_color_picker_enabled" id="background_picker" v-model="settings.background_color" @ok="chooseBgColor" @cancel="toggleBgPicker"></photoshop-picker>
         <br/>
 
         <button v-on:click="reset_settings">Reset All</button>
         <br/>
         <p class="group">
         Vibrance 
-        <input type="range" min="-0.5" max="0.5" value="0" step="0.01" class="slider" id="vibrance_scale" v-model="vibrance_scale" >
-        {{vibrance_scale}}
-        <button @click="vibrance_scale=0.0">Reset</button>
+        <input type="range" min="-0.5" max="0.5" value="0" step="0.01" class="slider" id="vibrance_scale" v-model="settings.vibrance_scale" >
+        {{settings.vibrance_scale}}
+        <button @click="settings.vibrance_scale=0.0">Reset</button>
         </p>
         <br/>
 
         <p class="group">
         Contrast
-        <input type="range" min="-128" max="128" value="0" step="1" class="slider" id="contrast_scale" v-model="contrast_scale" >
-        {{contrast_scale}}
-        <button @click="contrast_scale=0.0">Reset</button>
+        <input type="range" min="-128" max="128" value="0" step="1" class="slider" id="contrast_scale" v-model="settings.contrast_scale" >
+        {{settings.contrast_scale}}
+        <button @click="settings.contrast_scale=0.0">Reset</button>
         </p>
         <br/>
 
         <p class="group">
         Exposure
-        <input type="range" min="-3.5" max="3.5" value="0" step="0.01" class="slider" id="exposure_slider" v-model="exposure_scale" >
-        {{exposure_scale}}
-        <button @click="exposure_scale=0.0">Reset</button>
+        <input type="range" min="-3.5" max="3.5" value="0" step="0.01" class="slider" id="exposure_slider" v-model="settings.exposure_scale" >
+        {{settings.exposure_scale}}
+        <button @click="settings.exposure_scale=0.0">Reset</button>
         </p>
         <br/>
 
         
         <p class="group">
         Tint
-        <input type="range" min="-20" max="20" value="0" step="1" class="slider" id="tint_slider" v-model="tint_scale" >
-        {{tint_scale}}
-        <button @click="tint_scale=0.0">Reset</button>
+        <input type="range" min="-20" max="20" value="0" step="1" class="slider" id="tint_slider" v-model="settings.tint_scale" >
+        {{settings.tint_scale}}
+        <button @click="settings.tint_scale=0.0">Reset</button>
         </p>
         <br/>
 
@@ -496,13 +496,13 @@ Vue.component('imageprocessor', {
         <table>
         <tr>
         <td>Weight</td>
-        <td class="mainpanel"><input type="range" min="0.0" max="1.0" value="0.5" step="0.02" class="slider" id="gradient_map_weight" v-bind:style="gmap_gradient" v-model="gmap.weight" ></td>
-        <td>{{gmap.weight}}</td>
+        <td class="mainpanel"><input type="range" min="0.0" max="1.0" value="0.5" step="0.02" class="slider" id="gradient_map_weight" v-bind:style="gmap_gradient" v-model="settings.gmap.weight" ></td>
+        <td>{{settings.gmap.weight}}</td>
         </tr>
         <tr>
         <td>Opacity</td>
-        <td class="mainpanel"><input type="range" min="0.0" max="1.0" value="0.0" step="0.02" class="slider" id="gradient_map_opacity" v-model="gmap.opacity" ></td>
-        <td>{{gmap.opacity}}</td>
+        <td class="mainpanel"><input type="range" min="0.0" max="1.0" value="0.0" step="0.02" class="slider" id="gradient_map_opacity" v-model="settings.gmap.opacity" ></td>
+        <td>{{settings.gmap.opacity}}</td>
         </tr>
         </table>
         
@@ -515,7 +515,7 @@ Vue.component('imageprocessor', {
 
         <td align="right">
         <label class="switch">
-        <input type="checkbox" checked v-model="gmap.lock">
+        <input type="checkbox" checked v-model="settings.gmap.lock">
         <span class="swslider round"></span>
         </label>
         </td>
@@ -526,7 +526,7 @@ Vue.component('imageprocessor', {
         </p>
         <p class="group">
         Tone Map <br/>
-        <input type="checkbox" id="checkbox" v-model="tone_preserve_luminosity">Preserve luminosity
+        <input type="checkbox" id="checkbox" v-model="settings.tone_preserve_luminosity">Preserve luminosity
         <input type="radio" name="levels" value="0"  @click="color_tone_settings(0)">Shadows</input>
         <input type="radio" name="levels" value="1"  @click="color_tone_settings(1)" checked>Midtones</input>
         <input type="radio" name="levels" value="2"  @click="color_tone_settings(2)">Highlights</input>
@@ -534,21 +534,21 @@ Vue.component('imageprocessor', {
         <tr>
         <td>azure</td>
         <td class="mainpanel">
-        <input type="range" min="-1.0" max="1.0" value="0" step="0.01" class="slider"  id="color_cyan_red" v-model="tone_cyan_red" @change="color_tone_move">
+        <input type="range" min="-1.0" max="1.0" value="0" step="0.01" class="slider"  id="color_cyan_red" v-model="settings.one_cyan_red" @change="color_tone_move">
         </td>
         <td>red</td>
         </tr>
         <tr>
         <td>magenta</td>
         <td class="mainpanel">
-        <input type="range" min="-1.0" max="1.0" value="0" step="0.01" class="slider"  id="color_magenta_green" v-model="tone_magenta_green" @change="color_tone_move">
+        <input type="range" min="-1.0" max="1.0" value="0" step="0.01" class="slider"  id="color_magenta_green" v-model="settings.tone_magenta_green" @change="color_tone_move">
         </td>
         <td>green</td>
         </tr>
         <tr>
         <td>yellow</td>
         <td class="mainpanel">
-        <input type="range" min="-1.0" max="1.0" value="0" step="0.1" class="slider"  id="color_yellow_blue" v-model="tone_yellow_blue" @change="color_tone_move">
+        <input type="range" min="-1.0" max="1.0" value="0" step="0.1" class="slider"  id="color_yellow_blue" v-model="settings.tone_yellow_blue" @change="color_tone_move">
         </td>
         <td>
         blue
@@ -568,45 +568,45 @@ Vue.component('imageprocessor', {
             currentRandom: 0,
             mounted: false,
             timer: '',
+            
+            settings: {
+                foreground_color: { r: 255, g: 255, b: 255 },
+                background_color: { r: 0, g: 0, b: 0 },
+                vibrance_scale: 0.0,
+                contrast_scale: 0.0,
+                exposure_scale: 0.0,
+                tint_scale: 0.0,
+                gmap: {
+                    weight: 0.5,
+                    opacity: 0.0,
+                    lock: false,
+                    fg: {r:255, g:255, b:255},
+                    bg: {r:0, g:0, b:0}
+                },
+                tone_cyan_red: 0.0,
+                tone_magenta_green: 0.0,
+                tone_yellow_blue: 0.0,
+
+                highlights: {
+                    cyan_red: 0.0,
+                    magenta_green: 0.0,
+                    yellow_blue: 0.0
+                },
+                midtones: {
+                    cyan_red: 0.0,
+                    magenta_green: 0.0,
+                    yellow_blue: 0.0
+                },
+                shadows: {
+                    cyan_red: 0.0,
+                    magenta_green: 0.0,
+                    yellow_blue: 0.0
+                },
+            
+                tone_levels: 1,
+            },
             foreground_color_picker_enabled: false,
             background_color_picker_enabled: false,
-            foreground_color: { 
-               r: 255, g: 255, b: 255
-            },
-            background_color: { r: 0, g: 0, b: 0 },
-            vibrance_scale: 0.0,
-            contrast_scale: 0.0,
-            exposure_scale: 0.0,
-            tint_scale: 0.0,
-            gmap: {
-                weight: 0.5,
-                opacity: 0.0,
-                lock: false,
-                fg: {r:255, g:255, b:255},
-                bg: {r:0, g:0, b:0}
-            },
-            tone_cyan_red: 0.0,
-            tone_magenta_green: 0.0,
-            tone_yellow_blue: 0.0,
-
-            highlights: {
-                cyan_red: 0.0,
-                magenta_green: 0.0,
-                yellow_blue: 0.0
-            },
-            midtones: {
-                cyan_red: 0.0,
-                magenta_green: 0.0,
-                yellow_blue: 0.0
-            },
-            shadows: {
-                cyan_red: 0.0,
-                magenta_green: 0.0,
-                yellow_blue: 0.0
-            },
-            
-            tone_levels: 1,
-            tone_preserve_luminosity: false,
             bgc: {
                 backgroundColor: '#000000'
             },
@@ -631,31 +631,31 @@ Vue.component('imageprocessor', {
     methods: {
         chooseFgColor() {
             this.toggleFgPicker();
-            this.fgc.backgroundColor = this.foreground_color.hex;
-            this.foreground_color.r = this.foreground_color.rgba.r;
-            this.foreground_color.g = this.foreground_color.rgba.g;
-            this.foreground_color.b = this.foreground_color.rgba.b;
-            if(!this.gmap.lock) {
-                this.gmap.fg = this.foreground_color;
-                this.gmap.bg = this.background_color;
+            this.fgc.backgroundColor = this.settings.foreground_color.hex;
+            this.settings.foreground_color.r = this.settings.foreground_color.rgba.r;
+            this.settings.foreground_color.g = this.settings.foreground_color.rgba.g;
+            this.settings.foreground_color.b = this.settings.foreground_color.rgba.b;
+            if(!this.settings.gmap.lock) {
+                this.settings.gmap.fg = this.settings.foreground_color;
+                this.settings.gmap.bg = this.settings.background_color;
                 this.gmap_style();
             }
         },
         chooseBgColor() {
             this.toggleBgPicker();
-            this.bgc.backgroundColor = this.background_color.hex;
-            this.background_color.r = this.background_color.rgba.r;
-            this.background_color.g = this.background_color.rgba.g;
-            this.background_color.b = this.background_color.rgba.b;
-            if(!this.gmap.lock) {
-                this.gmap.fg = this.foreground_color;
-                this.gmap.bg = this.background_color;
+            this.bgc.backgroundColor = this.settings.background_color.hex;
+            this.settings.background_color.r = this.settings.background_color.rgba.r;
+            this.settings.background_color.g = this.settings.background_color.rgba.g;
+            this.settings.background_color.b = this.settings.background_color.rgba.b;
+            if(!this.settings.gmap.lock) {
+                this.settings.gmap.fg = this.settings.foreground_color;
+                this.settings.gmap.bg = this.settings.background_color;
                 this.gmap_style();
             }
         },
         gmap_style() {
-            sb = rgbtext(this.gmap.bg);
-            sf = rgbtext(this.gmap.fg);
+            sb = rgbtext(this.settings.gmap.bg);
+            sf = rgbtext(this.settings.gmap.fg);
             str = 'linear-gradient(to right, '+sb+' ,'+sf+' )';
             this.gmap_gradient.background = str;
         },
@@ -669,68 +669,68 @@ Vue.component('imageprocessor', {
             return this.source+"?random="+this.currentRandom
         },
         reset_gmap() {
-            this.gmap.weight=0.5;
-            this.gmap.opacity= 0.0;
-            this.gmap.lock=false;
-            this.gmap.fg={r:255, g:255, b:255};
-            this.gmap.bg={r:0, g:0, b:0};
+            this.settings.gmap.weight=0.5;
+            this.settings.gmap.opacity= 0.0;
+            this.settings.gmap.lock=false;
+            this.settings.gmap.fg={r:255, g:255, b:255};
+            this.settings.gmap.bg={r:0, g:0, b:0};
             this.gmap_style();
         },
         reset_color_tone() {
-            this.highlights.cyan_red = 0.0;
-            this.highlights.magenta_green = 0.0;
-            this.highlights.yellow_blue = 0.0;
-            this.midtones.cyan_red = 0.0;
-            this.midtones.magenta_green = 0.0;
-            this.midtones.yellow_blue = 0.0;
-            this.shadows.cyan_red = 0.0;
-            this.shadows.magenta_green = 0.0;
-            this.shadows.yellow_blue = 0.0;
-            this.tone_cyan_red = 0.0;
-            this.tone_magenta_green = 0.0;
-            this.tone_yellow_blue = 0.0;
-            this.tone_levels = 1;
-            this.tone_preserve_luminosity = false;
+            this.settings.highlights.cyan_red = 0.0;
+            this.settings.highlights.magenta_green = 0.0;
+            this.settings.highlights.yellow_blue = 0.0;
+            this.settings.midtones.cyan_red = 0.0;
+            this.settings.midtones.magenta_green = 0.0;
+            this.settings.midtones.yellow_blue = 0.0;
+            this.settings.shadows.cyan_red = 0.0;
+            this.settings.shadows.magenta_green = 0.0;
+            this.settings.shadows.yellow_blue = 0.0;
+            this.settings.tone_cyan_red = 0.0;
+            this.settings.tone_magenta_green = 0.0;
+            this.settings.tone_yellow_blue = 0.0;
+            this.settings.tone_levels = 1;
+            this.settings.tone_preserve_luminosity = false;
         },
         color_tone_move() {
             //console.log("this.levels="+this.tone_levels);
-            switch (this.tone_levels) {
+            switch (this.settings.tone_levels) {
                 case 2:
-                    this.highlights.cyan_red = this.tone_cyan_red;
-                    this.highlights.magenta_green = this.tone_magenta_green;
-                    this.highlights.yellow_blue = this.tone_yellow_blue;
+                    this.settings.highlights.cyan_red = this.settings.tone_cyan_red;
+                    this.settings.highlights.magenta_green = this.settings.tone_magenta_green;
+                    this.settings.highlights.yellow_blue = this.settings.tone_yellow_blue;
                     break;
                 case 1:
-                    this.midtones.cyan_red = this.tone_cyan_red;
-                    this.midtones.magenta_green = this.tone_magenta_green;
-                    this.midtones.yellow_blue = this.tone_yellow_blue;
+                    this.settings.midtones.cyan_red = this.settings.tone_cyan_red;
+                    this.settings.midtones.magenta_green = this.settings.tone_magenta_green;
+                    this.settings.midtones.yellow_blue = this.settings.tone_yellow_blue;
                     break;
                 case 0:
-                    this.shadows.cyan_red = this.tone_cyan_red;
-                    this.shadows.magenta_green = this.tone_magenta_green;
-                    this.shadows.yellow_blue = this.tone_yellow_blue;
-                    break
+                    this.settings.shadows.cyan_red = this.settings.tone_cyan_red;
+                    this.settings.shadows.magenta_green = this.settings.tone_magenta_green;
+                    this.settings.shadows.yellow_blue = this.settings.tone_yellow_blue;
+                    break;
             }
         },
 
         color_tone_settings(c) {
-            this.tone_levels = c;
+            this.settings.tone_levels = c;
             //alert(this.tone_levels);
-            switch(this.tone_levels) {
+            switch(this.settings.tone_levels) {
                 case 2:
-                    this.tone_cyan_red = this.highlights.cyan_red;
-                    this.tone_magenta_green = this.highlights.magenta_green;
-                    this.tone_yellow_blue = this.highlights.yellow_blue;
+                    this.settings.tone_cyan_red = this.settings.highlights.cyan_red;
+                    this.settings.tone_magenta_green = this.settings.highlights.magenta_green;
+                    this.settings.tone_yellow_blue = this.settings.highlights.yellow_blue;
                     break;
                 case 1:
-                    this.tone_cyan_red = this.midtones.cyan_red;
-                    this.tone_magenta_green = this.midtones.magenta_green;
-                    this.tone_yellow_blue = this.midtones.yellow_blue;
+                    this.settings.tone_cyan_red = this.settings.midtones.cyan_red;
+                    this.settings.tone_magenta_green = this.settings.midtones.magenta_green;
+                    this.settings.tone_yellow_blue = this.settings.midtones.yellow_blue;
                     break;
                 case 0:
-                    this.tone_cyan_red = this.shadows.cyan_red;
-                    this.tone_magenta_green = this.shadows.magenta_green;
-                    this.tone_yellow_blue = this.shadows.yellow_blue;
+                    this.settings.tone_cyan_red = this.settings.shadows.cyan_red;
+                    this.settings.tone_magenta_green = this.settings.shadows.magenta_green;
+                    this.settings.tone_yellow_blue = this.settings.shadows.yellow_blue;
                     break;
                 default:
                     alert("Set one of shadows, midtones or highlights to slide!");
@@ -738,10 +738,10 @@ Vue.component('imageprocessor', {
         },
 
         reset_settings() {
-            this.exposure_scale = 0.0;
-            this.contrast_scale = 0.0;
-            this.vibrance_scale = 0.0;
-            this.tint_scale = 0.0;
+            this.settings.exposure_scale = 0.0;
+            this.settings.contrast_scale = 0.0;
+            this.settings.vibrance_scale = 0.0;
+            this.settings.tint_scale = 0.0;
             this.reset_color_tone();
             this.reset_gmap();
         },
@@ -753,17 +753,7 @@ Vue.component('imageprocessor', {
             var ctx = canvas.getContext('2d');
         
             var img = new Image();
-            var vscale = this.vibrance_scale;
-            var cscale = this.contrast_scale;
-            var escale = this.exposure_scale;
-            var tscale = this.tint_scale;
-            var g_map = this.gmap;
-
-            var hi = this.highlights;
-            var shad = this.shadows;
-            var mid = this.midtones;
-            var pl = this.preserve_luminosity;
-
+            var settings = this.settings;
 
             //img.crossOrigin = '';
             img.onload=function() {
@@ -773,35 +763,35 @@ Vue.component('imageprocessor', {
                 var image = ctx.getImageData(0, 0, canvas.width, canvas.height);
                 var data = image.data;
 
-                if (g_map.opacity > 0) {
-                    gradient_map(data, g_map.bg, g_map.fg, g_map.weight, g_map.opacity);
+                if (settings.gmap.opacity > 0) {
+                    gradient_map(data, settings.gmap.bg, settings.gmap.fg, settings.gmap.weight, settings.gmap.opacity);
                 }
 
                 var cyan_red_coef = new Array();
                 var magenta_green_coef = new Array();
                 var yellow_blue_coef = new Array();
-                cyan_red_coef[0] = shad.cyan_red;
-                cyan_red_coef[1] = mid.cyan_red;
-                cyan_red_coef[2] = hi.cyan_red;
-                magenta_green_coef[0] = shad.magenta_green;
-                magenta_green_coef[1] = mid.magenta_green;
-                magenta_green_coef[2] = hi.magenta_green;
-                yellow_blue_coef[0] = shad.yellow_blue;
-                yellow_blue_coef[1] = mid.yellow_blue;
-                yellow_blue_coef[2] = hi.yellow_blue;
-                adjust_color_balance(data, cyan_red_coef, magenta_green_coef, yellow_blue_coef, pl);
+                cyan_red_coef[0] = settings.shadows.cyan_red;
+                cyan_red_coef[1] = settings.midtones.cyan_red;
+                cyan_red_coef[2] = settings.highlights.cyan_red;
+                magenta_green_coef[0] = settings.shadows.magenta_green;
+                magenta_green_coef[1] = settings.midtones.magenta_green;
+                magenta_green_coef[2] = settings.highlights.magenta_green;
+                yellow_blue_coef[0] = settings.shadows.yellow_blue;
+                yellow_blue_coef[1] = settings.midtones.yellow_blue;
+                yellow_blue_coef[2] = settings.highlights.yellow_blue;
+                adjust_color_balance(data, cyan_red_coef, magenta_green_coef, yellow_blue_coef, settings.preserve_luminosity);
 
-                if(vscale<-0.01 || vscale>0.01) {
-                    vibrance(data, vscale);
+                if(settings.vibrance_scale<-0.01 || settings.vibrance_scale>0.01) {
+                    vibrance(data, settings.vibrance_scale);
                 }
-                if (cscale<0 || cscale > 0) {
-                    contrast(data, cscale);
+                if (settings.contrast_scale<0 || settings.contrast_scale > 0) {
+                    contrast(data, settings.contrast_scale);
                 }
-                if (escale<-0.01 || escale>0.01) {
-                    exposure(data, escale);
+                if (settings.exposure_scale<-0.01 || settings.exposure_scale>0.01) {
+                    exposure(data, settings.exposure_scale);
                 }
-                if (tscale<0 || tscale>0) {
-                    tint(data, tscale);
+                if (settings.tint_scale<0 || settings.tint_scale>0) {
+                    tint(data, settings.tint_scale);
                 }
 
                 //black_and_white(data);
