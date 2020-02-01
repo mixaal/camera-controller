@@ -758,6 +758,13 @@ Vue.component('imageprocessor', {
             var escale = this.exposure_scale;
             var tscale = this.tint_scale;
             var g_map = this.gmap;
+
+            var hi = this.highlights;
+            var shad = this.shadows;
+            var mid = this.midtones;
+            var pl = this.preserve_luminosity;
+
+
             //img.crossOrigin = '';
             img.onload=function() {
                 canvas.width = img.width;
@@ -765,7 +772,25 @@ Vue.component('imageprocessor', {
                 ctx.drawImage(img, 0, 0);
                 var image = ctx.getImageData(0, 0, canvas.width, canvas.height);
                 var data = image.data;
-                
+
+                if (g_map.opacity > 0) {
+                    gradient_map(data, g_map.bg, g_map.fg, g_map.weight, g_map.opacity);
+                }
+
+                var cyan_red_coef = new Array();
+                var magenta_green_coef = new Array();
+                var yellow_blue_coef = new Array();
+                cyan_red_coef[0] = shad.cyan_red;
+                cyan_red_coef[1] = mid.cyan_red;
+                cyan_red_coef[2] = hi.cyan_red;
+                magenta_green_coef[0] = shad.magenta_green;
+                magenta_green_coef[1] = mid.magenta_green;
+                magenta_green_coef[2] = hi.magenta_green;
+                yellow_blue_coef[0] = shad.yellow_blue;
+                yellow_blue_coef[1] = mid.yellow_blue;
+                yellow_blue_coef[2] = hi.yellow_blue;
+                adjust_color_balance(data, cyan_red_coef, magenta_green_coef, yellow_blue_coef, pl);
+
                 if(vscale<-0.01 || vscale>0.01) {
                     vibrance(data, vscale);
                 }
@@ -778,9 +803,7 @@ Vue.component('imageprocessor', {
                 if (tscale<0 || tscale>0) {
                     tint(data, tscale);
                 }
-                if (g_map.opacity > 0) {
-                    gradient_map(data, g_map.bg, g_map.fg, g_map.weight, g_map.opacity);
-                }
+
                 //black_and_white(data);
                 ctx.putImageData(image, 0, 0);
             }
