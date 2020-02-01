@@ -478,9 +478,13 @@ function blend_normal(a,  b, opacity)
   return blend2( b, a, opacity );
 }
 
-function brush_stroke(data, width, size, opacity, x, y, color, blend_func) {
+function brush_stroke(data, width, mask, size, opacity, x, y, color, blend_func) {
     N2 = size>>1;
     color = vec3_multiply(color, 1/COLOR_MAX);
+    if(mask) {
+        Iv = to_gray(color.r, color.g, color.b);
+        color = {r: Iv, g: Iv, b: Iv};
+    }
     kernel = gauss_kernel(size, size/5.0);
     for(i=-N2; i<N2; i++) {
         for(j=-N2; j<N2; j++) {
@@ -873,7 +877,7 @@ Vue.component('imageprocessor', {
                     tint(data, settings.tint_scale);
                 }
 
-                brush_stroke(data, width, 101, 1.0, 100, 100, settings.foreground_color, blend_normal);
+                brush_stroke(data, width, false, 101, 0.5, 100, 100, settings.foreground_color, blend_normal);
 
                 //black_and_white(data);
                 ctx.putImageData(image, 0, 0);
