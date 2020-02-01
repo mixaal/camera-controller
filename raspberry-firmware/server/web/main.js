@@ -1,5 +1,9 @@
 const COLOR_MAX = 255;
 const COLOR_MID = 128;
+const EPSILON = 1e-6;
+const GIMP_TRANSFER_SHADOWS = 0;
+const GIMP_TRANSFER_MIDTONES = 1;
+const GIMP_TRANSFER_HIGHLIGHTS = 2;
 
 function to_gray(r, g, b) {
     return 0.3*r + 0.6*g + 0.1*b;
@@ -225,6 +229,192 @@ function gradient_map(data, start_color, end_color, weight, opacity) {
     }
 }
 
+function clamp(x, minr, maxr) {
+    if (x >= maxr ) return maxr;
+    if (x <= minr ) return minr;
+    return x;
+}
+
+// Borrowed from gimp:
+//    https://github.com/GNOME/gimp/blob/master/app/operations/gimpoperationcolorbalance.c
+function
+gimp_operation_color_balance_map (value,
+                                  lightness,
+                                  shadows,
+                                  midtones,
+                                  highlights)
+{
+  /* Apply masks to the corrections for shadows, midtones and
+   * highlights so that each correction affects only one range.
+   * Those masks look like this:
+   *     ‾\___
+   *     _/‾\_
+   *     ___/‾
+   * with ramps of width a at x = b and x = 1 - b.
+   *
+   * The sum of these masks equals 1 for x in 0..1, so applying the
+   * same correction in the shadows and in the midtones is equivalent
+   * to applying this correction on a virtual shadows_and_midtones
+   * range.
+   */
+  var a = 0.25, b = 0.333, scale = 0.7;
+
+  shadows    *= clamp((lightness - b) / -a + 0.5, 0, 1) * scale;
+  midtones   *= clamp ((lightness - b) /  a + 0.5, 0, 1) *
+                clamp ((lightness + b - 1) / -a + 0.5, 0, 1) * scale;
+  highlights *= clamp ((lightness + b - 1) /  a + 0.5, 0, 1) * scale;
+
+  value += shadows;
+  value += midtones;
+  value += highlights;
+  value = clamp(value, 0.0, 1.0);
+
+  return value;
+}
+
+
+
+function HUEtoRGB(H)
+{
+    R = saturatef(fabs(H * 6.0 - 3.0) - 1.0);
+    G = saturatef(2.0 - fabs(H * 6.0 - 2.0));
+    B = saturatef(2.0 - fabs(H * 6.0 - 4.0));
+    r = {r:R, g:G, b:B};
+    return r;
+}
+
+function HSLtoRGB(HSL)
+{
+    RGB = HUEtoRGB(HSL.r);
+    C = (1.0 - fabs(2.0 * HSL.b - 1.0)) * HSL.g;
+    RGB.r -= 0.5;
+    RGB.g -= 0.5;
+    RGB.b -= 0.5;
+
+    RGB.r *= C;
+    RGB.g *= C;
+    RGB.b *= C;
+
+    RGB.r += HSL.b;
+    RGB.g += HSL.b;
+    RGB.b += HSL.b;
+
+    return RGB;
+}
+
+function RGBtoHCV(RGB)
+{
+    // Based on work by Sam Hocevar and Emil Persson
+    var Px, Py, Pz, Pw;
+    var Qx, Qy, Qz, Qw;
+    if (RGB.g < RGB.b) {
+       Px = RGB.b;
+       Py = RGB.g;
+       Pz = -1.0;
+       Pw = 2.0/3.0;
+    } else {
+       Px = RGB.g;
+       Py = RGB.b;
+       Pz = 0.0;
+       Pw = -1.0/3.0;
+    }
+    if (RGB.r < Px) {
+       Qx = Px;
+       Qy = Py;
+       Qz = Pw;
+       Qw = RGB.r;
+    } else {
+       Qx = RGB.r;
+       Qy = Py;
+       Qz = Pz;
+       Qw = Px;
+    }
+    C = Qx - Math.min(Qw, Qy);
+    H = fabs((Qw - Qy) / (6.0 * C + EPSILON) + Qz);
+    return vec3_init(H, C, Qx);
+}
+
+function RGBtoHSL(RGB)
+{
+    HCV = RGBtoHCV(RGB);
+    L = HCV.b - HCV.g * 0.5;
+    S = HCV.g / (1.0 - fabs(L * 2.0 - 1.0) + EPSILON);
+    return vec3_init(HCV.r, S, L);
+}
+
+
+
+// Adjust color balance cyan-red, magenta-green, yellow-blue, -1,1
+function adjust_color_balance(
+    data,
+    cyan_red_coef,
+    magenta_green_coef,
+    yellow_blue_coef,
+    preserve_luminosity) {
+    
+  
+    for(i=0; i<3; i++) {
+      cyan_red_coef[i] = clamp(cyan_red_coef[i], -1 , 1);
+      magenta_green_coef[i] = clamp(magenta_green_coef[i], -1, 1);
+      yellow_blue_coef[i] = clamp(yellow_blue_coef[i], -1, 1);
+      //fprintf(stderr, "cyan_red_coef=%f\nmagenta_green_coef=%f\nyellow_blue_coef=%f\n", cyan_red_coef[i], magenta_green_coef[i], yellow_blue_coef[i]);
+    }
+
+    for (var i = 0; i < data.length; i += 4) {
+        r = data[i]   / COLOR_MAX;
+        g = data[i+1] / COLOR_MAX;
+        b = data[i+2] / COLOR_MAX;
+
+
+        HSL = RGBtoHSL(vec3_init(r, g, b));
+
+        r_n = gimp_operation_color_balance_map (r, HSL.b,
+                                               cyan_red_coef[GIMP_TRANSFER_SHADOWS],
+                                               cyan_red_coef[GIMP_TRANSFER_MIDTONES],
+                                               cyan_red_coef[GIMP_TRANSFER_HIGHLIGHTS]);
+ 
+        g_n = gimp_operation_color_balance_map (g, HSL.b,
+                                               magenta_green_coef[GIMP_TRANSFER_SHADOWS],
+                                               magenta_green_coef[GIMP_TRANSFER_MIDTONES],
+                                               magenta_green_coef[GIMP_TRANSFER_HIGHLIGHTS]);
+ 
+        b_n = gimp_operation_color_balance_map (b, HSL.b,
+                                               yellow_blue_coef[GIMP_TRANSFER_SHADOWS],
+                                               yellow_blue_coef[GIMP_TRANSFER_MIDTONES],
+                                               yellow_blue_coef[GIMP_TRANSFER_HIGHLIGHTS]);
+ 
+         if (preserve_luminosity)
+         {
+           rgb = vec3_init(r_n, g_n, b_n);
+           hsl = RGBtoHSL(rgb);
+ 
+           hsl.b = HSL.b;
+ 
+           rgb = HSLtoRGB(hsl);
+ 
+           r_n = rgb.r;
+           g_n = rgb.g;
+           b_n = rgb.b;
+          }
+ 
+          r = COLOR_MAX * r_n;
+          g = COLOR_MAX * g_n;
+          b = COLOR_MAX * b_n;
+          if (r > COLOR_MAX) r = COLOR_MAX;
+          if (g > COLOR_MAX) g = COLOR_MAX;
+          if (b > COLOR_MAX) b = COLOR_MAX;
+          if (r<0) r=0;
+          if (g<0) g=0;
+          if (b<0) b=0;
+          data[i]     = r;
+          data[i + 1] = g;
+          data[i + 2] = b;
+    }
+
+}
+
+
+
 function black_and_white(data) {
     for (var i = 0; i < data.length; i += 4) {
         r = data[i];
@@ -361,28 +551,28 @@ Vue.component('imageprocessor', {
         <p class="group">
         Tone Map <br/>
         <input type="checkbox" id="checkbox" v-model="tone_preserve_luminosity">Preserve luminosity
-        <input type="radio" name="levels" value="0"  @click="color_tone_settings(0)">Highlights</input>
+        <input type="radio" name="levels" value="0"  @click="color_tone_settings(0)">Shadows</input>
         <input type="radio" name="levels" value="1"  @click="color_tone_settings(1)" checked>Midtones</input>
-        <input type="radio" name="levels" value="2"  @click="color_tone_settings(2)">Shadows</input>
+        <input type="radio" name="levels" value="2"  @click="color_tone_settings(2)">Highlights</input>
         <table>
         <tr>
         <td>azure</td>
         <td class="mainpanel">
-        <input type="range" min="-100" max="100.0" value="0" step="0.1" class="slider"  id="color_cyan_red" v-model="tone_cyan_red" @change="color_tone_move">
+        <input type="range" min="-1.0" max="1.0" value="0" step="0.01" class="slider"  id="color_cyan_red" v-model="tone_cyan_red" @change="color_tone_move">
         </td>
         <td>red</td>
         </tr>
         <tr>
         <td>magenta</td>
         <td class="mainpanel">
-        <input type="range" min="-100" max="100.0" value="0" step="0.1" class="slider"  id="color_magenta_green" v-model="tone_magenta_green" @change="color_tone_move">
+        <input type="range" min="-1.0" max="1.0" value="0" step="0.01" class="slider"  id="color_magenta_green" v-model="tone_magenta_green" @change="color_tone_move">
         </td>
         <td>green</td>
         </tr>
         <tr>
         <td>yellow</td>
         <td class="mainpanel">
-        <input type="range" min="-100" max="100.0" value="0" step="0.1" class="slider"  id="color_yellow_blue" v-model="tone_yellow_blue" @change="color_tone_move">
+        <input type="range" min="-1.0" max="1.0" value="0" step="0.1" class="slider"  id="color_yellow_blue" v-model="tone_yellow_blue" @change="color_tone_move">
         </td>
         <td>
         blue
@@ -626,6 +816,10 @@ Vue.component('imageprocessor', {
             var escale = this.exposure_scale;
             var tscale = this.tint_scale;
             var g_map = this.gmap;
+            var hi = this.highlights;
+            var shad = this.shadows;
+            var mid = this.midtones;
+            var pl = this.preserve_luminosity;
             //img.crossOrigin = '';
             img.onload=function() {
                 canvas.width = img.width;
@@ -634,22 +828,41 @@ Vue.component('imageprocessor', {
                 var image = ctx.getImageData(0, 0, canvas.width, canvas.height);
                 var data = image.data;
                 
-                if(vscale<-0.01 || vscale>0.01) {
-                    vibrance(data, vscale);
+                
+                
+                if (g_map.opacity > 0) {
+                    gradient_map(data, g_map.bg, g_map.fg, g_map.weight, g_map.opacity);
                 }
+
+                var cyan_red_coef = new Array();
+                var magenta_green_coef = new Array();
+                var yellow_blue_coef = new Array();
+                cyan_red_coef[0] = shad.cyan_red;
+                cyan_red_coef[1] = mid.cyan_red;
+                cyan_red_coef[2] = hi.cyan_red;
+                magenta_green_coef[0] = shad.magenta_green;
+                magenta_green_coef[1] = mid.magenta_green;
+                magenta_green_coef[2] = hi.magenta_green;
+                yellow_blue_coef[0] = shad.yellow_blue;
+                yellow_blue_coef[1] = mid.yellow_blue;
+                yellow_blue_coef[2] = hi.yellow_blue;
+                adjust_color_balance(data, cyan_red_coef, magenta_green_coef, yellow_blue_coef, pl);
+                //black_and_white(data);
+
                 if (cscale<0 || cscale > 0) {
                     contrast(data, cscale);
+                }
+                
+                if (tscale<0 || tscale>0) {
+                    tint(data, tscale);
+                }
+
+                if(vscale<-0.01 || vscale>0.01) {
+                    vibrance(data, vscale);
                 }
                 if (escale<-0.01 || escale>0.01) {
                     exposure(data, escale);
                 }
-                if (tscale<0 || tscale>0) {
-                    tint(data, tscale);
-                }
-                if (g_map.opacity > 0) {
-                    gradient_map(data, g_map.bg, g_map.fg, g_map.weight, g_map.opacity);
-                }
-                //black_and_white(data);
                 ctx.putImageData(image, 0, 0);
             }
             //img.crossOrigin = "anonymous";
