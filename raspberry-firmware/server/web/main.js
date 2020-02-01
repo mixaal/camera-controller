@@ -534,7 +534,7 @@ Vue.component('imageprocessor', {
         <tr>
         <td>azure</td>
         <td class="mainpanel">
-        <input type="range" min="-1.0" max="1.0" value="0" step="0.01" class="slider"  id="color_cyan_red" v-model="settings.one_cyan_red" @change="color_tone_move">
+        <input type="range" min="-1.0" max="1.0" value="0" step="0.01" class="slider"  id="color_cyan_red" v-model="settings.tone_cyan_red" @change="color_tone_move">
         </td>
         <td>red</td>
         </tr>
@@ -693,7 +693,7 @@ Vue.component('imageprocessor', {
             this.settings.tone_preserve_luminosity = false;
         },
         color_tone_move() {
-            //console.log("this.levels="+this.tone_levels);
+            console.log(this.settings);
             switch (this.settings.tone_levels) {
                 case 2:
                     this.settings.highlights.cyan_red = this.settings.tone_cyan_red;
@@ -779,6 +779,7 @@ Vue.component('imageprocessor', {
                 yellow_blue_coef[0] = settings.shadows.yellow_blue;
                 yellow_blue_coef[1] = settings.midtones.yellow_blue;
                 yellow_blue_coef[2] = settings.highlights.yellow_blue;
+                //console.log(settings);
                 adjust_color_balance(data, cyan_red_coef, magenta_green_coef, yellow_blue_coef, settings.preserve_luminosity);
 
                 if(settings.vibrance_scale<-0.01 || settings.vibrance_scale>0.01) {
