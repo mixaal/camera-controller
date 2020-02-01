@@ -447,7 +447,7 @@ function gauss_kernel(N, sigma=1.0) {
         kernel[i] = new Array(N);
     }
     if (sigma==0.0) {
-        sigma = N/5.0;
+        sigma = N/6.0;
     }
     s = 2.0 * sigma * sigma; 
     maxval = 0;
@@ -478,21 +478,23 @@ function blend_normal(a,  b, opacity)
   return blend2( b, a, opacity );
 }
 
-function brush_stroke(data, width, mask, size, opacity, x, y, color, blend_func) {
+function brush_stroke(data, width, mask, size, sigma, opacity, x, y, color, blend_func) {
     N2 = size>>1;
     color = vec3_multiply(color, 1/COLOR_MAX);
     if(mask) {
         Iv = to_gray(color.r, color.g, color.b);
         color = {r: Iv, g: Iv, b: Iv};
     }
-    kernel = gauss_kernel(size, size/5.0);
+    kernel = gauss_kernel(size, sigma);
     for(i=-N2; i<N2; i++) {
         for(j=-N2; j<N2; j++) {
             xx = x+i;
             yy = y+j;
+            if(xx<0) continue;
+            if(yy<0) continue;
+            if(xx>=width) continue;
             idx = 4 * (yy*width + xx);
-            
-            if (idx<0) continue;
+
             if (idx>=data.length) continue;
             g = kernel[i+N2][j+N2];
             source_pixel = vec3_init(data[idx]/COLOR_MAX, data[idx+1]/COLOR_MAX, data[idx+2]/COLOR_MAX);
@@ -536,7 +538,18 @@ Vue.component('imageprocessor', {
         <button id="fg_color" v-bind:style="bgc" @click="toggleBgPicker">BG</button>
         <photoshop-picker v-if="background_color_picker_enabled" id="background_picker" v-model="settings.background_color" @ok="chooseBgColor" @cancel="toggleBgPicker"></photoshop-picker>
         <br/>
-
+        <p class="group">
+        Brush Settings
+        <input type="range" min="1" max="1001" value="31" step="2" class="slider"  v-model="settings.brush.size" >
+        {{settings.brush.size}}
+        <!--
+        <input type="range" min="0" max="1001"  step="0.1" class="slider"  v-model="settings.brush.sigma" >
+        {{settings.brush.sigma}}
+        -->
+        <input type="range" min="0" max="1.0" value="1.0" step="0.01" class="slider"  v-model="settings.brush.opacity" >
+        {{settings.brush.opacity}}
+        
+        </p>
         <button v-on:click="reset_settings">Reset All</button>
         <br/>
         <p class="group">
@@ -613,7 +626,7 @@ Vue.component('imageprocessor', {
         <input type="radio" name="levels" value="2"  @click="color_tone_settings(2)">Highlights</input>
         <table>
         <tr>
-        <td>azure</td>
+        <td>cyan</td>
         <td class="mainpanel">
         <input type="range" min="-1.0" max="1.0" value="0" step="0.01" class="slider"  id="color_cyan_red" v-model="settings.tone_cyan_red" @change="color_tone_move">
         </td>
@@ -685,6 +698,11 @@ Vue.component('imageprocessor', {
                 },
             
                 tone_levels: 1,
+                brush: {
+                    opacity: 1.0,
+                    size: 31,
+                    sigma: 0.0
+                }
             },
             foreground_color_picker_enabled: false,
             background_color_picker_enabled: false,
@@ -877,7 +895,7 @@ Vue.component('imageprocessor', {
                     tint(data, settings.tint_scale);
                 }
 
-                brush_stroke(data, width, false, 101, 0.5, 100, 100, settings.foreground_color, blend_normal);
+                brush_stroke(data, width, false, settings.brush.size, settings.brush.sigma, settings.brush.opacity, 100, 100, settings.foreground_color, blend_normal);
 
                 //black_and_white(data);
                 ctx.putImageData(image, 0, 0);
