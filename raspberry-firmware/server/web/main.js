@@ -547,16 +547,33 @@ Vue.component('imageprocessor', {
         <photoshop-picker v-if="background_color_picker_enabled" id="background_picker" v-model="settings.background_color" @ok="chooseBgColor" @cancel="toggleBgPicker"></photoshop-picker>
         <br/>
         <p class="group">
-        Brush Settings
-        <input type="range" min="1" max="1001" value="31" step="2" class="slider"  v-model="settings.brush.size" >
-        {{settings.brush.size}}
-        <!--
-        <input type="range" min="0" max="1001"  step="0.1" class="slider"  v-model="settings.brush.sigma" >
-        {{settings.brush.sigma}}
-        -->
-        <input type="range" min="0" max="1.0" value="1.0" step="0.01" class="slider"  v-model="settings.brush.opacity" >
-        {{settings.brush.opacity}}
         
+        <table>
+        <tr>
+        <td class="mainpanel">
+        Brush Settings
+        </td>
+        <td align="right">
+        <label class="switch">
+        <input type="checkbox" checked v-model="settings.brush.lock">
+        <span class="swslider round"></span>
+        </label>
+        </td>
+        <td>
+        Hide
+        </td>
+        </tr>
+        <tr>
+        <td>Size</td>
+        <td class="mainpanel"><input type="range" min="1" max="1001" value="31" step="2" class="slider"  v-model="settings.brush.size" ></td>
+        <td>{{settings.brush.size}}</td>
+        </tr>
+        <tr>
+        <td>Opacity</td>
+        <td class="mainpanel"><input type="range" min="0" max="1.0" value="1.0" step="0.01" class="slider"  v-model="settings.brush.opacity" ></td>
+        <td>{{settings.brush.opacity}}</td>
+        </tr>
+        </table>
         </p>
         <button v-on:click="reset_settings">Reset All</button>
         <br/>
@@ -709,9 +726,10 @@ Vue.component('imageprocessor', {
             
                 tone_levels: 1,
                 brush: {
-                    opacity: 1.0,
-                    size: 31,
-                    sigma: 0.0
+                    opacity: 0.5,
+                    size: 401,
+                    sigma: 0.0,
+                    lock: false
                 },
                 history: [],
                 image_loaded: false
@@ -892,12 +910,16 @@ Vue.component('imageprocessor', {
             //if(!this.mounted) return;
             //const left = this.$refs.paint.getBoundingClientRect().left
             //const top = this.$refs.paint.getBoundingClientRect().top
-            this.settings.history.push(
-                {type: "brush_stroke", x: e.offsetX, y: e.offsetY}
-            );
-            this.to_draw.push(
-                {type: "brush_stroke", x: e.offsetX, y: e.offsetY}
-            );
+            stroke = {
+                type: "brush_stroke", 
+                x: e.offsetX, y: e.offsetY, 
+                size:this.settings.brush.size, 
+                opacity:this.settings.brush.opacity,
+                sigma:this.settings.brush.sigma,
+                color:this.settings.foreground_color
+            };
+            this.settings.history.push(stroke);
+            this.to_draw.push(stroke);
         },
 
         handleMouseMove(e) {
@@ -977,28 +999,30 @@ Vue.component('imageprocessor', {
 
                 brush_data = _that.layers.stack[0].data;
 
-                while(to_draw.length>0) {
-                    el = to_draw.shift();
-                    switch (el.type) {
-                        case "brush_stroke":
-                            brush_stroke(brush_data, width, false, settings.brush.size, settings.brush.sigma, settings.brush.opacity, el.x, el.y, settings.foreground_color);                            
-                            break;
+                if(!settings.brush.lock) {
+                    while(to_draw.length>0) {
+                        el = to_draw.shift();
+                        switch (el.type) {
+                            case "brush_stroke":
+                                brush_stroke(brush_data, width, false, el.size, el.sigma, el.opacity, el.x, el.y, el.color);                            
+                                break;
+                        }
                     }
                 }
 
-                // merge brush layer with 
-                for(i=0; i<data.length; i+=4) {
-                    output = blend_normal(
-                        {r: data[i], g: data[i+1], b: data[i+2]},
-                        {r: brush_data[i], g: brush_data[i+1], b: brush_data[i+2]},
-                        1.0,
-                        brush_data[i+3]
-                    );
-                    // output = {r: brush_data[i], g: brush_data[i+1], b: brush_data[i+2]};
-                    data[i] = output.r;
-                    data[i+1] = output.g;
-                    data[i+2] = output.b;
-                    
+                // merge brush layer with image
+                if(!settings.brush.lock) {
+                    for(i=0; i<data.length; i+=4) {
+                        output = blend_normal(
+                            {r: data[i], g: data[i+1], b: data[i+2]},
+                            {r: brush_data[i], g: brush_data[i+1], b: brush_data[i+2]},
+                            1.0,
+                            brush_data[i+3]
+                        );
+                        data[i] = output.r;
+                        data[i+1] = output.g;
+                        data[i+2] = output.b;
+                    }
                 }
                 
 
