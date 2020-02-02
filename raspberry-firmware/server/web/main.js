@@ -457,10 +457,15 @@ function gauss_kernel(N, sigma=1.0) {
     s = 2.0 * sigma * sigma; 
     maxval = 0;
     N2 = N>>1;
+    var f_xy = 0;
     for(x=-N2; x<N2; x++) {
         for(y=-N2; y<N2; y++) {
             r = Math.sqrt(x * x + y * y); 
-            f_xy = (Math.exp(-(r * r) / s)) / (Math.PI * s);
+            if(r>N2) {
+                f_xy = 0;
+            } else {
+                f_xy = (Math.exp(-(r * r) / s)) / (Math.PI * s);
+            }
             kernel[x+N2][y+N2]  = f_xy;
             if(f_xy>maxval) {
                 maxval = f_xy;
@@ -500,13 +505,11 @@ function brush_stroke(data, width, mask, size, sigma, opacity, x, y, color) {
 
             if (idx>=data.length) continue;
             g = kernel[i+N2][j+N2];
-//            source_pixel = vec3_init(data[idx]/COLOR_MAX, data[idx+1]/COLOR_MAX, data[idx+2]/COLOR_MAX);
-//            blend = blend_func(color, source_pixel, g*opacity);
-            data[idx] =  color.r;
-            data[idx+1] =  color.g;
-            data[idx+2] =  color.b;
-            data[idx+3] = g*opacity;
-            //alert(g*opacity);
+            a = g*opacity;
+            data[idx] =  data[idx]*(1-a) + color.r*a;
+            data[idx+1] =  data[idx+1]*(1-a) + color.g*a;
+            data[idx+2] =  data[idx+2]*(1-a) + color.b*a;
+            data[idx+3] = data[idx+3]*(1-a) + a;
         }
     }
 }
@@ -746,13 +749,13 @@ Vue.component('imageprocessor', {
                 this.layers.stack = new Array(N);
             }
         },
-        create_new_layer(data) {
+        create_new_layer(data_length) {
             this.layers.stack[this.layers.top] = {
-                data: new Array(data.length),
-                mask: new Array(data.length),
+                data: new Array(data_length),
+                mask: new Array(data_length),
                 mode: NORMAL_MODE
             }
-            for(i=0; i<data.length; i+=4) {
+            for(i=0; i<data_length; i+=4) {
                 this.layers.stack[this.layers.top].data[i]=0;
                 this.layers.stack[this.layers.top].data[i+1]=0;
                 this.layers.stack[this.layers.top].data[i+2]=0;
@@ -933,8 +936,8 @@ Vue.component('imageprocessor', {
                 var data = image.data;
 
                 if(!settings.image_loaded) {
-                    alert("Allocate brush layer");
-                    _that.create_new_layer(data);
+                    //alert("Allocate brush layer");
+                    _that.create_new_layer(data.length);
                     _that.set_image_loaded();
                 }
                 
@@ -992,8 +995,6 @@ Vue.component('imageprocessor', {
                         brush_data[i+3]
                     );
                     // output = {r: brush_data[i], g: brush_data[i+1], b: brush_data[i+2]};
-                    
-                    
                     data[i] = output.r;
                     data[i+1] = output.g;
                     data[i+2] = output.b;
