@@ -5,6 +5,9 @@ const GIMP_TRANSFER_SHADOWS = 0;
 const GIMP_TRANSFER_MIDTONES = 1;
 const GIMP_TRANSFER_HIGHLIGHTS = 2;
 
+const NORMAL_MODE = 0;
+const SCREEN_MODE = 1;
+
 function to_gray(r, g, b) {
     return 0.3*r + 0.6*g + 0.1*b;
 }
@@ -529,7 +532,7 @@ Vue.component('imageprocessor', {
         <table>
         <tr>
         <td>
-        <canvas ref="paint"></canvas>
+        <canvas v-on:mousedown="handleMouseDown" v-on:mouseup="handleMouseUp" v-on:mousemove="handleMouseMove" ref="paint"></canvas>
         </td>
         <td class="panel">
         <button id="fg_color" v-bind:style="fgc" @click="toggleFgPicker">FG</button>
@@ -702,7 +705,13 @@ Vue.component('imageprocessor', {
                     opacity: 1.0,
                     size: 31,
                     sigma: 0.0
-                }
+                },
+                history: []
+            },
+            to_draw: [],
+            layers: {
+                stack:[],
+                top: 0
             },
             foreground_color_picker_enabled: false,
             background_color_picker_enabled: false,
@@ -721,6 +730,7 @@ Vue.component('imageprocessor', {
     },
     created () {
         this.mounted = false;
+        this.create_layers(20);
         this.paint();
         this.timer = setInterval(this.paint, 300);
     },
@@ -728,6 +738,23 @@ Vue.component('imageprocessor', {
         this.mounted = true;
     },
     methods: {
+        create_layers(N) {
+            for (i=0; i<N; i++) {
+                this.layers.stack = new Array(N);
+            }
+        },
+        create_new_layer(data) {
+            this.layers.stack[this.layers.top] = {
+                "data": new Array(data.length),
+                "mask": new Array(data.length),
+                mode: NORMAL_MODE
+            }
+            this.layers.top ++;
+        },
+        merge_layers(data) {
+            
+            //FIXME TODO
+        },
         chooseFgColor() {
             this.toggleFgPicker();
             this.fgc.backgroundColor = this.settings.foreground_color.hex;
@@ -844,6 +871,26 @@ Vue.component('imageprocessor', {
             this.reset_color_tone();
             this.reset_gmap();
         },
+
+        handleMouseDown(e) {
+
+        },
+
+        handleMouseUp(e) {
+            //if(!this.mounted) return;
+            //const left = this.$refs.paint.getBoundingClientRect().left
+            //const top = this.$refs.paint.getBoundingClientRect().top
+            this.settings.history.push(
+                {type: "brush_stroke", x: e.offsetX, y: e.offsetY}
+            );
+            this.to_draw.push(
+                {type: "brush_stroke", x: e.offsetX, y: e.offsetY}
+            );
+        },
+
+        handleMouseMove(e) {
+
+        },
         
         paint() {
             if (!this.mounted) return;
@@ -853,7 +900,13 @@ Vue.component('imageprocessor', {
         
             var img = new Image();
             var settings = this.settings;
+            var to_draw = this.to_draw;
 
+            //brush_stroke(data, width, false, settings.brush.size, settings.brush.sigma, settings.brush.opacity, mouse_x, mouse_y, settings.foreground_color, blend_normal);
+
+            
+
+            
             //img.crossOrigin = '';
             img.onload=function() {
                 canvas.width = img.width;
@@ -894,8 +947,15 @@ Vue.component('imageprocessor', {
                 if (settings.tint_scale<0 || settings.tint_scale>0) {
                     tint(data, settings.tint_scale);
                 }
-
-                brush_stroke(data, width, false, settings.brush.size, settings.brush.sigma, settings.brush.opacity, 100, 100, settings.foreground_color, blend_normal);
+                while(to_draw.length>0) {
+                    el = to_draw.shift();
+                    switch (el.type) {
+                        case "brush_stroke":
+                            brush_stroke(data, width, false, settings.brush.size, settings.brush.sigma, settings.brush.opacity, el.x, el.y, settings.foreground_color, blend_normal);
+                            break;
+                    }
+                }
+                
 
                 //black_and_white(data);
                 ctx.putImageData(image, 0, 0);
