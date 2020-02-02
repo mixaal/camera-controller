@@ -534,6 +534,7 @@ Vue.component('imageprocessor', {
     },
     template: `
     <div id="sketch">
+        <button @click="save_profile">Save Profile</button>
         <table>
         <tr>
         <td>
@@ -762,6 +763,21 @@ Vue.component('imageprocessor', {
         this.mounted = true;
     },
     methods: {
+        save_profile() {
+            profile_name = prompt("Profile name");
+            http = new XMLHttpRequest()
+            http.open('POST', "/profiles/save");
+            http.setRequestHeader("Content-Type", "application/json;charset=UTF-8");
+            profile={name: profile_name, settings: this.settings};
+            http.send(JSON.stringify(profile_name));
+            http.onerror = function() { // only triggers if the request couldn't be made at all
+                alert(`Network Error`);
+            };
+            http.onloadend = function() {
+                if(http.status == 404) 
+                    alert('server replied 404');
+            }
+        },
         create_layers(N) {
             for (i=0; i<N; i++) {
                 this.layers.stack = new Array(N);
