@@ -188,15 +188,17 @@ function vec3_clamp(v, minr, maxr)
   return o;
 }
 
-function blend2(left, right, pos)
+function blend2(Ca, Cb, aa, ab)
 {
-  v =  {
-    r: left.r * (1-pos) + right.r * pos,
-    g: left.g * (1-pos) + right.g * pos,
-    b: left.b * (1-pos) + right.b * pos
-  }
-
-  return v;
+  c_a = vec3_multiply(Ca, aa);
+  c_b = vec3_multiply(Cb, ab);
+  c_o = vec3_add(
+    vec3_multiply(c_a, 1-ab), c_b
+  );
+//   ao = aa+ab*(1-aa);
+//   v= vec3_multiply(c_o, 1.0/ao);
+  //alert("ca="+c_a.r+" cb="+c_b.r+" aa="+aa+" ab="+ab+" ao="+ao+" co="+c_o.r);
+  return c_o;
 }
 
 function gradient_map(data, start_color, end_color, weight, opacity) {
@@ -473,17 +475,15 @@ function gauss_kernel(N, sigma=1.0) {
     return kernel;
 }
 
-function blend_normal(a,  b, opacity)
+function blend_normal(a,  b, a_opacity, b_opacity)
 {
-  opacity = saturatef(opacity);
-  a = vec3_clamp(a, 0.0, 1.0);
-  b = vec3_clamp(b, 0.0, 1.0);
-  return blend2( b, a, opacity );
+  a_opacity = saturatef(a_opacity);
+  b_opacity = saturatef(b_opacity);
+  return blend2( a, b, a_opacity, b_opacity );
 }
 
-function brush_stroke(data, width, mask, size, sigma, opacity, x, y, color, blend_func) {
+function brush_stroke(data, width, mask, size, sigma, opacity, x, y, color) {
     N2 = size>>1;
-    color = vec3_multiply(color, 1/COLOR_MAX);
     if(mask) {
         Iv = to_gray(color.r, color.g, color.b);
         color = {r: Iv, g: Iv, b: Iv};
@@ -500,11 +500,13 @@ function brush_stroke(data, width, mask, size, sigma, opacity, x, y, color, blen
 
             if (idx>=data.length) continue;
             g = kernel[i+N2][j+N2];
-            source_pixel = vec3_init(data[idx]/COLOR_MAX, data[idx+1]/COLOR_MAX, data[idx+2]/COLOR_MAX);
-            blend = blend_func(color, source_pixel, g*opacity);
-            data[idx] = COLOR_MAX * blend.r;
-            data[idx+1] = COLOR_MAX * blend.g;
-            data[idx+2] = COLOR_MAX * blend.b;
+//            source_pixel = vec3_init(data[idx]/COLOR_MAX, data[idx+1]/COLOR_MAX, data[idx+2]/COLOR_MAX);
+//            blend = blend_func(color, source_pixel, g*opacity);
+            data[idx] =  color.r;
+            data[idx+1] =  color.g;
+            data[idx+2] =  color.b;
+            data[idx+3] = g*opacity;
+            //alert(g*opacity);
         }
     }
 }
@@ -667,6 +669,8 @@ Vue.component('imageprocessor', {
             timer: '',
             
             settings: {
+                canvas_width: 0,
+                canvas_height: 0,
                 foreground_color: { r: 255, g: 255, b: 255 },
                 background_color: { r: 0, g: 0, b: 0 },
                 vibrance_scale: 0.0,
@@ -706,7 +710,8 @@ Vue.component('imageprocessor', {
                     size: 31,
                     sigma: 0.0
                 },
-                history: []
+                history: [],
+                image_loaded: false
             },
             to_draw: [],
             layers: {
@@ -724,8 +729,6 @@ Vue.component('imageprocessor', {
             gmap_gradient: {
                 background: 'linear-gradient(to right, rgb(0,0,0) , rgb(255,255,255) )'
             }
-
-
         }
     },
     created () {
@@ -745,9 +748,15 @@ Vue.component('imageprocessor', {
         },
         create_new_layer(data) {
             this.layers.stack[this.layers.top] = {
-                "data": new Array(data.length),
-                "mask": new Array(data.length),
+                data: new Array(data.length),
+                mask: new Array(data.length),
                 mode: NORMAL_MODE
+            }
+            for(i=0; i<data.length; i+=4) {
+                this.layers.stack[this.layers.top].data[i]=0;
+                this.layers.stack[this.layers.top].data[i+1]=0;
+                this.layers.stack[this.layers.top].data[i+2]=0;
+                this.layers.stack[this.layers.top].data[i+3]=0;
             }
             this.layers.top ++;
         },
@@ -891,6 +900,15 @@ Vue.component('imageprocessor', {
         handleMouseMove(e) {
 
         },
+
+        set_canvas_dim(w, h) {
+            this.settings.width = w;
+            this.settings.height = h;
+        },
+
+        set_image_loaded() {
+            this.settings.image_loaded = true;
+        },
         
         paint() {
             if (!this.mounted) return;
@@ -902,18 +920,24 @@ Vue.component('imageprocessor', {
             var settings = this.settings;
             var to_draw = this.to_draw;
 
+            var _that = this;
+
             //brush_stroke(data, width, false, settings.brush.size, settings.brush.sigma, settings.brush.opacity, mouse_x, mouse_y, settings.foreground_color, blend_normal);
-
-            
-
-            
-            //img.crossOrigin = '';
             img.onload=function() {
+                _that.set_canvas_dim(img.width, img.height);
+                
                 canvas.width = img.width;
                 canvas.height = img.height;
                 ctx.drawImage(img, 0, 0);
                 var image = ctx.getImageData(0, 0, canvas.width, canvas.height);
                 var data = image.data;
+
+                if(!settings.image_loaded) {
+                    alert("Allocate brush layer");
+                    _that.create_new_layer(data);
+                    _that.set_image_loaded();
+                }
+                
                 var width = canvas.width;
 
                 if (settings.gmap.opacity > 0) {
@@ -947,13 +971,33 @@ Vue.component('imageprocessor', {
                 if (settings.tint_scale<0 || settings.tint_scale>0) {
                     tint(data, settings.tint_scale);
                 }
+
+                brush_data = _that.layers.stack[0].data;
+
                 while(to_draw.length>0) {
                     el = to_draw.shift();
                     switch (el.type) {
                         case "brush_stroke":
-                            brush_stroke(data, width, false, settings.brush.size, settings.brush.sigma, settings.brush.opacity, el.x, el.y, settings.foreground_color, blend_normal);
+                            brush_stroke(brush_data, width, false, settings.brush.size, settings.brush.sigma, settings.brush.opacity, el.x, el.y, settings.foreground_color);                            
                             break;
                     }
+                }
+
+                // merge brush layer with 
+                for(i=0; i<data.length; i+=4) {
+                    output = blend_normal(
+                        {r: data[i], g: data[i+1], b: data[i+2]},
+                        {r: brush_data[i], g: brush_data[i+1], b: brush_data[i+2]},
+                        1.0,
+                        brush_data[i+3]
+                    );
+                    // output = {r: brush_data[i], g: brush_data[i+1], b: brush_data[i+2]};
+                    
+                    
+                    data[i] = output.r;
+                    data[i+1] = output.g;
+                    data[i+2] = output.b;
+                    
                 }
                 
 
