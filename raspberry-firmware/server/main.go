@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -50,6 +51,11 @@ var preview livePreview = livePreview{enabled: false}
 var previewHistogram livePreview = livePreview{enabled: false}
 var previewLevels livePreview = livePreview{enabled: false}
 
+// Profile body type
+type Profile struct {
+	Name string `json:"name"`
+}
+
 // helper method for in-memory content streaming
 func streamContent(w http.ResponseWriter, r *http.Request, p *livePreview) {
 	if !skipCamera && !p.enabled {
@@ -61,6 +67,27 @@ func streamContent(w http.ResponseWriter, r *http.Request, p *livePreview) {
 	w.Header().Set("Content-Type", "application/octetstream")
 	w.WriteHeader(http.StatusOK)
 	w.Write(p.content)
+}
+
+func saveProfile(w http.ResponseWriter, r *http.Request) {
+	body, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		log.Printf("Error reading body: %v", err)
+		http.Error(w, "can't read profile", http.StatusBadRequest)
+		return
+	}
+	log.Printf("body" + string(body))
+	var profile Profile
+	json.Unmarshal(body, &profile)
+	log.Printf("masrhsal")
+	log.Printf(profile.Name)
+	err = ioutil.WriteFile(profile.Name, body, 0644)
+	if err != nil {
+		log.Fatal(err)
+		http.Error(w, "can't write profile", http.StatusBadRequest)
+		return
+	}
+	w.WriteHeader(http.StatusOK)
 }
 
 // stream live preview
@@ -282,5 +309,6 @@ func main() {
 	r.HandleFunc("/liveView/levels/on", liveViewLevelsOn).Methods(http.MethodPost)
 	r.HandleFunc("/liveView/levels/off", liveViewLevelsOff).Methods(http.MethodPost)
 	r.HandleFunc("/liveView/duration", captureDuration).Methods(http.MethodGet)
+	r.HandleFunc("/profiles/save", saveProfile).Methods(http.MethodPost)
 	log.Fatal(http.ListenAndServe(":8080", r))
 }

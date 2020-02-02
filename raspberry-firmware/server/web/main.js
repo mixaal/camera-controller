@@ -766,10 +766,10 @@ Vue.component('imageprocessor', {
         save_profile() {
             profile_name = prompt("Profile name");
             http = new XMLHttpRequest()
-            http.open('POST', "/profiles/save");
+            http.open('POST', "/profiles/save", true);
             http.setRequestHeader("Content-Type", "application/json;charset=UTF-8");
             profile={name: profile_name, settings: this.settings};
-            http.send(JSON.stringify(profile_name));
+            http.send(JSON.stringify(profile));
             http.onerror = function() { // only triggers if the request couldn't be made at all
                 alert(`Network Error`);
             };
