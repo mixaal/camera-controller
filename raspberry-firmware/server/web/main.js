@@ -535,6 +535,7 @@ Vue.component('imageprocessor', {
     template: `
     <div id="sketch">
         <button @click="save_profile">Save Profile</button>
+        <button @click="load_profile">Load Profile</button>
         <table>
         <tr>
         <td>
@@ -774,8 +775,33 @@ Vue.component('imageprocessor', {
                 alert(`Network Error`);
             };
             http.onloadend = function() {
-                if(http.status == 404) 
-                    alert('server replied 404');
+                if(http.status != 200) {
+                    alert('server replied: '+http.status);
+                    return;
+                }
+            }
+        },
+        load_profile() {
+            profile_name = prompt("Profile name");
+            http = new XMLHttpRequest()
+            http.open('POST', "/profiles/load", true);
+            http.setRequestHeader("Content-Type", "application/json;charset=UTF-8");
+            profile={name: profile_name};
+            http.send(JSON.stringify(profile));
+            http.onerror = function() { // only triggers if the request couldn't be made at all
+                alert(`Network Error`);
+            };
+            var _that = this;
+            http.onloadend = function() {
+                if(http.status != 200) {
+                    alert('server replied: '+http.status);
+                    return;
+                }
+                profile = JSON.parse(http.response);
+                //console.log("XXX"+JSON.stringify(_that.settings));
+                _that.settings = profile.settings;
+                _that.to_draw = profile.settings.history;
+                //console.log("YYY"+JSON.stringify(_that.settings));
             }
         },
         create_layers(N) {

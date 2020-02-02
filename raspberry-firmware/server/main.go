@@ -69,6 +69,23 @@ func streamContent(w http.ResponseWriter, r *http.Request, p *livePreview) {
 	w.Write(p.content)
 }
 
+func loadProfile(w http.ResponseWriter, r *http.Request) {
+	body, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		log.Printf("Error reading body: %v", err)
+		http.Error(w, "can't read profile", http.StatusBadRequest)
+		return
+	}
+
+	log.Printf("body: " + string(body))
+
+	var profile Profile
+	json.Unmarshal(body, &profile)
+	log.Printf(profile.Name)
+
+	serveFile(w, r, "profiles/"+profile.Name, false)
+}
+
 func saveProfile(w http.ResponseWriter, r *http.Request) {
 	body, err := ioutil.ReadAll(r.Body)
 	if err != nil {
@@ -76,12 +93,11 @@ func saveProfile(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "can't read profile", http.StatusBadRequest)
 		return
 	}
-	log.Printf("body" + string(body))
+	log.Printf("body: " + string(body))
 	var profile Profile
 	json.Unmarshal(body, &profile)
-	log.Printf("masrhsal")
 	log.Printf(profile.Name)
-	err = ioutil.WriteFile(profile.Name, body, 0644)
+	err = ioutil.WriteFile("profiles/"+profile.Name, body, 0644)
 	if err != nil {
 		log.Fatal(err)
 		http.Error(w, "can't write profile", http.StatusBadRequest)
@@ -310,5 +326,6 @@ func main() {
 	r.HandleFunc("/liveView/levels/off", liveViewLevelsOff).Methods(http.MethodPost)
 	r.HandleFunc("/liveView/duration", captureDuration).Methods(http.MethodGet)
 	r.HandleFunc("/profiles/save", saveProfile).Methods(http.MethodPost)
+	r.HandleFunc("/profiles/load", loadProfile).Methods(http.MethodPost)
 	log.Fatal(http.ListenAndServe(":8080", r))
 }
