@@ -829,7 +829,11 @@ Vue.component('imageprocessor', {
                 //console.log("XXX"+JSON.stringify(_that.settings));
                 _that.settings = profile.settings;
                 _that.to_draw = profile.settings.history;
+                _that.fgc.backgroundColor = profile.settings.foreground_color.hex;
+                _that.bgc.backgroundColor = profile.settings.background_color.hex;
                 _that.clear_brush_canvas();
+                _that.set_gmap_bg();
+                _that.set_gmap_fg();
                 //console.log("YYY"+JSON.stringify(_that.settings));
             }
         },
@@ -865,17 +869,27 @@ Vue.component('imageprocessor', {
             
             //FIXME TODO
         },
+        set_gmap_fg() {
+            if(!this.settings.gmap.lock) {
+                this.settings.gmap.fg = this.settings.foreground_color;
+                this.settings.gmap.bg = this.settings.background_color;
+                this.gmap_style();
+            }
+        },
+        set_gmap_bg() {
+            if(!this.settings.gmap.lock) {
+                this.settings.gmap.fg = this.settings.foreground_color;
+                this.settings.gmap.bg = this.settings.background_color;
+                this.gmap_style();
+            }
+        },
         chooseFgColor() {
             this.toggleFgPicker();
             this.fgc.backgroundColor = this.settings.foreground_color.hex;
             this.settings.foreground_color.r = this.settings.foreground_color.rgba.r;
             this.settings.foreground_color.g = this.settings.foreground_color.rgba.g;
             this.settings.foreground_color.b = this.settings.foreground_color.rgba.b;
-            if(!this.settings.gmap.lock) {
-                this.settings.gmap.fg = this.settings.foreground_color;
-                this.settings.gmap.bg = this.settings.background_color;
-                this.gmap_style();
-            }
+            this.set_gmap_fg();
         },
         chooseBgColor() {
             this.toggleBgPicker();
@@ -883,11 +897,7 @@ Vue.component('imageprocessor', {
             this.settings.background_color.r = this.settings.background_color.rgba.r;
             this.settings.background_color.g = this.settings.background_color.rgba.g;
             this.settings.background_color.b = this.settings.background_color.rgba.b;
-            if(!this.settings.gmap.lock) {
-                this.settings.gmap.fg = this.settings.foreground_color;
-                this.settings.gmap.bg = this.settings.background_color;
-                this.gmap_style();
-            }
+            this.set_gmap_bg();
         },
         gmap_style() {
             sb = rgbtext(this.settings.gmap.bg);
