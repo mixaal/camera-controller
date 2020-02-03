@@ -720,8 +720,8 @@ Vue.component('imageprocessor', {
             settings: {
                 canvas_width: 0,
                 canvas_height: 0,
-                foreground_color: { r: 255, g: 255, b: 255 },
-                background_color: { r: 0, g: 0, b: 0 },
+                foreground_color: { r: 255, g: 255, b: 255, rgba: {r: 255, g: 255, b:255} },
+                background_color: { r: 0, g: 0, b: 0, rgba: {r:0, g:0, b:0} },
                 vibrance_scale: 0.0,
                 contrast_scale: 0.0,
                 exposure_scale: 0.0,
@@ -829,6 +829,12 @@ Vue.component('imageprocessor', {
                 //console.log("XXX"+JSON.stringify(_that.settings));
                 _that.settings = profile.settings;
                 _that.to_draw = profile.settings.history;
+                if(!profile.settings.foreground_color.hasOwnProperty("hex")) {
+                    profile.settings.foreground_color.hex = "#FFFFFF";
+                }
+                if(!profile.settings.background_color.hasOwnProperty("hex")) {
+                    profile.settings.background_color.hex = "#000000";
+                }
                 _that.fgc.backgroundColor = profile.settings.foreground_color.hex;
                 _that.bgc.backgroundColor = profile.settings.background_color.hex;
                 _that.clear_brush_canvas();
@@ -886,14 +892,25 @@ Vue.component('imageprocessor', {
         chooseFgColor() {
             this.toggleFgPicker();
             this.fgc.backgroundColor = this.settings.foreground_color.hex;
+            if(!this.settings.foreground_color.hasOwnProperty("rgba")) {
+                this.settings.foreground_color.rgba = {r: COLOR_MAX, g: COLOR_MAX, b:COLOR_MAX};
+                this.settings.hex = "#FFFFFF";
+            }
             this.settings.foreground_color.r = this.settings.foreground_color.rgba.r;
             this.settings.foreground_color.g = this.settings.foreground_color.rgba.g;
             this.settings.foreground_color.b = this.settings.foreground_color.rgba.b;
+
             this.set_gmap_fg();
         },
         chooseBgColor() {
             this.toggleBgPicker();
             this.bgc.backgroundColor = this.settings.background_color.hex;
+            if(!this.settings.background_color.hasOwnProperty("rgba")) {
+                this.settings.background_color.rgba = {
+                    r: 0, g: 0, b:0
+                };
+                this.settings.hex = "#000000";
+            }
             this.settings.background_color.r = this.settings.background_color.rgba.r;
             this.settings.background_color.g = this.settings.background_color.rgba.g;
             this.settings.background_color.b = this.settings.background_color.rgba.b;
