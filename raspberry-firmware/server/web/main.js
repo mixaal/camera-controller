@@ -487,7 +487,7 @@ function blend_normal(a,  b, a_opacity, b_opacity)
   return blend2( a, b, a_opacity, b_opacity );
 }
 
-function brush_stroke(data, width, mask, size, sigma, opacity, x, y, color) {
+function brush_stroke(data, width, mask, size, sigma, opacity, x, y, color, eraser=false) {
     N2 = size>>1;
     if(mask) {
         Iv = to_gray(color.r, color.g, color.b);
@@ -506,10 +506,29 @@ function brush_stroke(data, width, mask, size, sigma, opacity, x, y, color) {
             if (idx>=data.length) continue;
             g = kernel[i+N2][j+N2];
             a = g*opacity;
-            data[idx] =  data[idx]*(1-a) + color.r*a;
-            data[idx+1] =  data[idx+1]*(1-a) + color.g*a;
-            data[idx+2] =  data[idx+2]*(1-a) + color.b*a;
-            data[idx+3] = data[idx+3]*(1-a) + a;
+            if(eraser) {
+                a_1 = 1.0;
+                if(a!=0.0) {
+                    a_1 = 1.0/(1.0-a);
+                }
+                // data[idx] =  a_1 * (data[idx] - color.r*a);
+                // data[idx+1] =  a_1 * (data[idx+1] - color.g*a);
+                // data[idx+2] =  a_1 * (data[idx+2] - color.b*a);
+                data[idx+3] =  a_1 * (data[idx+3] -  a);
+            } else {
+                data[idx] =  data[idx]*(1-a) + color.r*a;
+                data[idx+1] =  data[idx+1]*(1-a) + color.g*a;
+                data[idx+2] =  data[idx+2]*(1-a) + color.b*a;
+                data[idx+3] = data[idx+3]*(1-a) + a;
+            }
+            if(data[idx] < 0) data[idx] = 0;
+            if(data[idx+1] < 0) data[idx+1] = 0;
+            if(data[idx+2] < 0) data[idx+2] = 0;
+            if(data[idx+3] < 0) data[idx+3] = 0;
+            if(data[idx] > COLOR_MAX) data[idx] = COLOR_MAX;
+            if(data[idx+1] > COLOR_MAX) data[idx+1] = COLOR_MAX;
+            if(data[idx+2] > COLOR_MAX) data[idx+2] = COLOR_MAX;
+            if(data[idx+3] > 1) data[idx+3] = 1.0;
         }
     }
 }
@@ -561,10 +580,18 @@ Vue.component('imageprocessor', {
         <span class="swslider round"></span>
         </label>
         </td>
+        <td>Hide</td>
+        <td>Brush</td>
         <td>
-        Hide
+        <label class="switch">
+        <input type="checkbox" v-model="settings.brush.eraser">
+        <span class="swslider round"></span>
+        </label>
         </td>
+        <td>Eraser</td>
         </tr>
+        </table>
+        <table>
         <tr>
         <td>Size</td>
         <td class="mainpanel"><input type="range" min="1" max="1001" value="31" step="2" class="slider"  v-model="settings.brush.size" ></td>
@@ -731,7 +758,8 @@ Vue.component('imageprocessor', {
                     opacity: 0.5,
                     size: 401,
                     sigma: 0.0,
-                    lock: false
+                    lock: false,
+                    eraser: false
                 },
                 history: [],
                 image_loaded: false
@@ -801,7 +829,17 @@ Vue.component('imageprocessor', {
                 //console.log("XXX"+JSON.stringify(_that.settings));
                 _that.settings = profile.settings;
                 _that.to_draw = profile.settings.history;
+                _that.clear_brush_canvas();
                 //console.log("YYY"+JSON.stringify(_that.settings));
+            }
+        },
+        get_brush_data() {
+            return this.layers.stack[0].data;
+        },
+        clear_brush_canvas() {
+            brush_data = this.get_brush_data();
+            for(i=0; i<brush_data.length; i++) {
+                brush_data[i] = 0;
             }
         },
         create_layers(N) {
@@ -960,6 +998,9 @@ Vue.component('imageprocessor', {
                 sigma:this.settings.brush.sigma,
                 color:this.settings.foreground_color
             };
+            if(this.settings.brush.eraser) {
+                stroke.type = "eraser";
+            }
             this.settings.history.push(stroke);
             this.to_draw.push(stroke);
         },
@@ -1039,14 +1080,17 @@ Vue.component('imageprocessor', {
                     tint(data, settings.tint_scale);
                 }
 
-                brush_data = _that.layers.stack[0].data;
+                brush_data = _that.get_brush_data();
 
                 if(!settings.brush.lock) {
                     while(to_draw.length>0) {
                         el = to_draw.shift();
                         switch (el.type) {
                             case "brush_stroke":
-                                brush_stroke(brush_data, width, false, el.size, el.sigma, el.opacity, el.x, el.y, el.color);                            
+                                brush_stroke(brush_data, width, false, el.size, el.sigma, el.opacity, el.x, el.y, el.color, false);
+                                break;
+                            case "eraser":
+                                brush_stroke(brush_data, width, false, el.size, el.sigma, el.opacity, el.x, el.y, el.color, true);           
                                 break;
                         }
                     }
