@@ -828,7 +828,7 @@ Vue.component('imageprocessor', {
                 profile = JSON.parse(http.response);
                 //console.log("XXX"+JSON.stringify(_that.settings));
                 _that.settings = profile.settings;
-                _that.to_draw = profile.settings.history;
+                _that.to_draw = profile.settings.history.slice();
                 if(!profile.settings.foreground_color.hasOwnProperty("hex")) {
                     profile.settings.foreground_color.hex = "#FFFFFF";
                 }
