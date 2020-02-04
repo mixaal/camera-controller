@@ -166,6 +166,14 @@ function vec3_add(a, b) {
     }
 }
 
+function vec3_sub(a, b) {
+    return {
+        r: a.r - b.r,
+        g: a.g - b.g,
+        b: a.b - b.b
+    }
+}
+
 function vec3_multiply(v, k) {
     return {
         r: v.r * k,
@@ -480,6 +488,26 @@ function gauss_kernel(N, sigma=1.0) {
     return kernel;
 }
 
+function blend_linear_light(a, b, a_opacity, b_opacity) 
+{
+    base = vec3_init(0.5, 0.5, 0.5);
+    a_opacity = saturatef(a_opacity);
+    b_opacity = saturatef(b_opacity);
+    output = vec3_sub(vec3_add(a, vec3_multiply(b, 2.0)), base);
+    //output = vec3_clamp(output, 0, COLOR_MAX);
+    return blend2( output, b, a_opacity, b_opacity );  
+}
+
+
+function blend_addition(a, b, a_opacity, b_opacity) 
+{
+    a_opacity = saturatef(a_opacity);
+    b_opacity = saturatef(b_opacity);
+    output = vec3_add(a, b);
+    //output = vec3_clamp(output, 0, COLOR_MAX);
+    return blend2( output, b, a_opacity, b_opacity );  
+}
+
 function blend_normal(a,  b, a_opacity, b_opacity)
 {
   a_opacity = saturatef(a_opacity);
@@ -573,6 +601,13 @@ Vue.component('imageprocessor', {
         <tr>
         <td class="mainpanel">
         Brush Settings
+        </td>
+        <td>
+        <select v-model="settings.brush.layer_mode">
+            <option v-for="option in settings.brush.modes" v-bind:value="option.value">
+            {{ option.text }}
+            </option>
+        </select>
         </td>
         <td align="right">
         <label class="switch">
@@ -759,7 +794,13 @@ Vue.component('imageprocessor', {
                     size: 401,
                     sigma: 0.0,
                     lock: false,
-                    eraser: false
+                    eraser: false,
+                    layer_mode: "normal",
+                    modes: [
+                        {text: "Normal", value: "normal"},
+                        {text: "Addition", value: "addition"},
+                        {text: "Linear light", value: "linear"}
+                    ]
                 },
                 history: [],
                 image_loaded: false
@@ -1124,17 +1165,45 @@ Vue.component('imageprocessor', {
                 }
 
                 // merge brush layer with image
+                var output = {r:0, g:0, b:0};
                 if(!settings.brush.lock) {
                     for(i=0; i<data.length; i+=4) {
-                        output = blend_normal(
-                            {r: data[i], g: data[i+1], b: data[i+2]},
-                            {r: brush_data[i], g: brush_data[i+1], b: brush_data[i+2]},
-                            1.0,
-                            brush_data[i+3]
-                        );
+                        switch(settings.brush.layer_mode) {
+                            case "linear":
+                                output = blend_linear_light(
+                                    {r: data[i], g: data[i+1], b: data[i+2]},
+                                    {r: brush_data[i], g: brush_data[i+1], b: brush_data[i+2]},
+                                    1.0,
+                                    brush_data[i+3]
+                                );
+                                break;
+                            case "addition":
+                                output = blend_addition(
+                                    {r: data[i], g: data[i+1], b: data[i+2]},
+                                    {r: brush_data[i], g: brush_data[i+1], b: brush_data[i+2]},
+                                    1.0,
+                                    brush_data[i+3]
+                                    );
+                                break;
+                            case "normal":
+                            default:
+                                output = blend_normal(
+                                    {r: data[i], g: data[i+1], b: data[i+2]},
+                                    {r: brush_data[i], g: brush_data[i+1], b: brush_data[i+2]},
+                                    1.0,
+                                    brush_data[i+3]
+                                );
+                            
+                                break;
+                        }
+                        
+                        if(output.r>COLOR_MAX) output.r = COLOR_MAX;
+                        if(output.g>COLOR_MAX) output.g = COLOR_MAX;
+                        if(output.b>COLOR_MAX) output.b = COLOR_MAX;
                         data[i] = output.r;
                         data[i+1] = output.g;
                         data[i+2] = output.b;
+                        
                     }
                 }
                 
