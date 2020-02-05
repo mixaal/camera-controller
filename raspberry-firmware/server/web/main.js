@@ -603,6 +603,9 @@ Vue.component('imageprocessor', {
         Brush Settings
         </td>
         <td>
+        <button v-on:click="clear_brush_canvas">Clear</button>
+        </td>
+        <td>
         <select v-model="settings.brush.layer_mode">
             <option v-for="option in settings.brush.modes" v-bind:value="option.value">
             {{ option.text }}
