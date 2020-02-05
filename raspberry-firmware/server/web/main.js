@@ -869,6 +869,7 @@ Vue.component('imageprocessor', {
                     alert('server replied: '+http.status);
                     return;
                 }
+                _that.clear_brush_canvas();
                 profile = JSON.parse(http.response);
                 //console.log("XXX"+JSON.stringify(_that.settings));
                 _that.settings = profile.settings;
@@ -881,7 +882,7 @@ Vue.component('imageprocessor', {
                 }
                 _that.fgc.backgroundColor = profile.settings.foreground_color.hex;
                 _that.bgc.backgroundColor = profile.settings.background_color.hex;
-                _that.clear_brush_canvas();
+                
                 _that.set_gmap_bg();
                 _that.set_gmap_fg();
                 //console.log("YYY"+JSON.stringify(_that.settings));
@@ -895,6 +896,11 @@ Vue.component('imageprocessor', {
             for(i=0; i<brush_data.length; i++) {
                 brush_data[i] = 0;
             }
+            var filtered = this.settings.history.filter(function(el, index, arr){
+                return (el.type!="brush_stroke" && el.type!="eraser");
+            
+            });
+            this.settings.history = filtered;
         },
         create_layers(N) {
             for (i=0; i<N; i++) {
