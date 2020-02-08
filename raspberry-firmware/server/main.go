@@ -318,6 +318,7 @@ func main() {
 	r.HandleFunc("/main.js", getIndex).Methods(http.MethodGet)
 	r.HandleFunc("/vue-color.min.js", getIndex).Methods(http.MethodGet)
 	r.HandleFunc("/vue-color.js", getIndex).Methods(http.MethodGet)
+	r.HandleFunc("/vue.js", getIndex).Methods(http.MethodGet)
 	r.HandleFunc("/liveView/capture/on", liveViewOn).Methods(http.MethodPost)
 	r.HandleFunc("/liveView/capture/off", liveViewOff).Methods(http.MethodPost)
 	r.HandleFunc("/liveView/histogram/on", liveViewHistogramOn).Methods(http.MethodPost)
