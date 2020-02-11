@@ -1145,7 +1145,7 @@ Vue.component('imageprocessor', {
                 //console.log(settings);
                 adjust_color_balance(data, cyan_red_coef, magenta_green_coef, yellow_blue_coef, settings.preserve_luminosity);
 
-                if(settings.vibrance_scale<-0.01 || settings.vibrance_scale>0.01) {
+                if(settings.vibrance_scale<-0.01 || settings.vibrance_scale>0.01 || settings.show_vibrance) {
                     vibrance(data, settings.vibrance_scale, settings.show_vibrance);
                 }
                 if (settings.contrast_scale<0 || settings.contrast_scale > 0) {
