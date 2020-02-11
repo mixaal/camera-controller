@@ -104,7 +104,7 @@ function adjust_saturation(data, scale) {
     }
 }
 
-function vibrance(data, scale) {
+function vibrance(data, scale, show_saturation) {
     scale = Number(scale);
     //alert("max="+max_saturation+" min="+min_saturation);
     for (var i = 0; i < data.length; i += 4) {
@@ -124,11 +124,15 @@ function vibrance(data, scale) {
             HSL.g += scale;
         }
         HSL.g = clamp(HSL.g, 0.0, 1.0);
-        // data[i] = data[i+1] = data[i+2] = COLOR_MAX * HSL.g;
-        newRGB = HSLtoRGB(HSL);
-        data[i] = COLOR_MAX * newRGB.r;
-        data[i+1] = COLOR_MAX * newRGB.g;
-        data[i+2] = COLOR_MAX * newRGB.b;
+        if(show_saturation) {
+            data[i] = data[i+1] = data[i+2] = COLOR_MAX * HSL.g;
+        } else {
+            newRGB = HSLtoRGB(HSL);
+            data[i] = COLOR_MAX * newRGB.r;
+            data[i+1] = COLOR_MAX * newRGB.g;
+            data[i+2] = COLOR_MAX * newRGB.b;
+        }
+        
     }
 }
 
@@ -640,6 +644,10 @@ Vue.component('imageprocessor', {
         <input type="range" min="-1.0" max="1.0" value="0" step="0.01" class="slider" id="vibrance_scale" v-model="settings.vibrance_scale" >
         {{settings.vibrance_scale}}
         <button @click="settings.vibrance_scale=0.0">Reset</button>
+        <label class="switch">
+        <input type="checkbox" v-model="settings.show_vibrance">
+        <span class="swslider round"></span>
+        </label>Show saturation
         </p>
         <br/>
 
@@ -752,6 +760,7 @@ Vue.component('imageprocessor', {
                 foreground_color: { r: 255, g: 255, b: 255, rgba: {r: 255, g: 255, b:255} },
                 background_color: { r: 0, g: 0, b: 0, rgba: {r:0, g:0, b:0} },
                 vibrance_scale: 0.0,
+                show_vibrance: false,
                 contrast_scale: 0.0,
                 exposure_scale: 0.0,
                 tint_scale: 0.0,
@@ -1045,6 +1054,7 @@ Vue.component('imageprocessor', {
             this.settings.exposure_scale = 0.0;
             this.settings.contrast_scale = 0.0;
             this.settings.vibrance_scale = 0.0;
+            this.settings.show_vibrance = false;
             this.settings.tint_scale = 0.0;
             this.reset_color_tone();
             this.reset_gmap();
@@ -1136,7 +1146,7 @@ Vue.component('imageprocessor', {
                 adjust_color_balance(data, cyan_red_coef, magenta_green_coef, yellow_blue_coef, settings.preserve_luminosity);
 
                 if(settings.vibrance_scale<-0.01 || settings.vibrance_scale>0.01) {
-                    vibrance(data, settings.vibrance_scale);
+                    vibrance(data, settings.vibrance_scale, settings.show_vibrance);
                 }
                 if (settings.contrast_scale<0 || settings.contrast_scale > 0) {
                     contrast(data, settings.contrast_scale);
