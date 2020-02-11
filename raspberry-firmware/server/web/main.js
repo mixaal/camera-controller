@@ -13,17 +13,11 @@ function to_gray(r, g, b) {
 }
 
 function maxf(a, b, c) {
-    m = a;
-    if (b>a) m = a;
-    if (c>m) m = c;
-    return c;
+    return Math.max(Math.max(a, b), c);
 }
 
 function minf(a, b, c) {
-    m = a;
-    if (b<a) m = a;
-    if (c<m) m = c;
-    return c;
+    return Math.min(Math.min(a, b), c);
 }
 
 function fabs(x) {
@@ -96,48 +90,45 @@ function tint(data, temp) {
     }
 }
 
-function vibrance(data, scale) {
+function adjust_saturation(data, scale) {
+    scale = Number(scale);
     for (var i = 0; i < data.length; i += 4) {
-        r = data[i];
-        g = data[i+1];
-        b = data[i+2];
-        x = maxf(r, g, b);
-        y = minf(r, g, b);
+        rgb = vec3_init(data[i]/COLOR_MAX, data[i+1]/COLOR_MAX, data[i+2]/COLOR_MAX);
+        HSL = RGBtoHSL(rgb);
+        HSL.g += scale;
+        HSL.g = clamp(HSL.g, 0.0, 1.0);
+        newRGB = HSLtoRGB(HSL);
+        data[i] = COLOR_MAX * newRGB.r;
+        data[i+1] = COLOR_MAX * newRGB.g;
+        data[i+2] = COLOR_MAX * newRGB.b;
+    }
+}
 
-        gray = to_gray(r, g, b);
-        if (x == r && x!=y) {
-            t  = fabs((g - b) / ( x - y ));
-            if (t > 1.0) t = 1.0;
-            scale = scale * (1+t) * 0.5;
+function vibrance(data, scale) {
+    scale = Number(scale);
+    //alert("max="+max_saturation+" min="+min_saturation);
+    for (var i = 0; i < data.length; i += 4) {
+        rgb = vec3_init(data[i]/COLOR_MAX, data[i+1]/COLOR_MAX, data[i+2]/COLOR_MAX);
+        HSL = RGBtoHSL(rgb);
+        if(scale>0) {
+            // if(HSL.g>0.5) {
+            //     HSL.g += scale*0.125;
+            // }
+            if(HSL.g>0.3) {
+                HSL.g += scale*0.25;
+            }
+            if(HSL.g>0.15) {
+                HSL.g += scale * 0.5;
+            }
+        } else {
+            HSL.g += scale;
         }
-        a = (x - y) / COLOR_MAX;
-        scale1 = scale * (2 - a);
-        scale2 = 1 + scale1 * (1 - a);
-        sub = y * scale1;
-        r = r * scale2  - sub;
-        g = g * scale2  - sub;
-        b = b * scale2  - sub;
-
-        gray2 = to_gray(r, g, b);
-
-        r *= gray/gray2;
-        g *= gray/gray2;
-        b *= gray/gray2;
-
-        m = maxf( r, g, b );
-
-        if ( m > COLOR_MAX ) {
-            scale = (COLOR_MAX - gray2) / (m - gray2);
-            r = (r - gray2) * scale + gray2;
-            g = (g - gray2) * scale + gray2;
-            b = (b - gray2) * scale + gray2;
-        }
-        if (r > COLOR_MAX) r = COLOR_MAX;
-        if (g > COLOR_MAX) g = COLOR_MAX;
-        if (b > COLOR_MAX) b = COLOR_MAX;
-        data[i]     = r;
-        data[i + 1] = g;
-        data[i + 2] = b;
+        HSL.g = clamp(HSL.g, 0.0, 1.0);
+        // data[i] = data[i+1] = data[i+2] = COLOR_MAX * HSL.g;
+        newRGB = HSLtoRGB(HSL);
+        data[i] = COLOR_MAX * newRGB.r;
+        data[i+1] = COLOR_MAX * newRGB.g;
+        data[i+2] = COLOR_MAX * newRGB.b;
     }
 }
 
@@ -646,7 +637,7 @@ Vue.component('imageprocessor', {
         <br/>
         <p class="group">
         Vibrance 
-        <input type="range" min="-0.5" max="0.5" value="0" step="0.01" class="slider" id="vibrance_scale" v-model="settings.vibrance_scale" >
+        <input type="range" min="-1.0" max="1.0" value="0" step="0.01" class="slider" id="vibrance_scale" v-model="settings.vibrance_scale" >
         {{settings.vibrance_scale}}
         <button @click="settings.vibrance_scale=0.0">Reset</button>
         </p>
