@@ -111,13 +111,9 @@ function vibrance(data, scale, show_saturation) {
         rgb = vec3_init(data[i]/COLOR_MAX, data[i+1]/COLOR_MAX, data[i+2]/COLOR_MAX);
         HSL = RGBtoHSL(rgb);
         if(scale>0) {
-            // if(HSL.g>0.5) {
-            //     HSL.g += scale*0.125;
-            // }
             if(HSL.g>0.3) {
                 HSL.g += scale*0.25;
-            }
-            if(HSL.g>0.15) {
+            } else if (HSL.g>0.15) {
                 HSL.g += scale * 0.5;
             }
         } else {
